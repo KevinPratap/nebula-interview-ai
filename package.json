@@ -1,0 +1,88 @@
+{
+  "name": "nebula-electron",
+  "private": true,
+  "version": "1.2.1",
+  "description": "Nebula Interview AI Assistant",
+  "author": "Nebula interview ai <contact@nebulainterviewai.com>",
+  "main": "main.js",
+  "scripts": {
+    "dev": "vite",
+    "electron": "electron .",
+    "build": "vite build",
+    "postinstall": "electron-builder install-app-deps",
+    "dist": "npm run build && electron-builder --win",
+    "package": "npm run build && electron-packager . \"Nebula Assistant\" --platform=win32 --arch=x64 --out=dist_electron --overwrite --icon=public/logo.ico --extra-resource=resources/engine_sidecar.exe --ignore=\"^/(src|build|dist_electron|.git|.venv|tsconfig.*|vite.config.ts|eslint.config.js|.gitignore|README.md)\" --prune=true --asar"
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.3",
+    "framer-motion": "^12.34.3",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@types/node": "^24.10.1",
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.1.1",
+    "electron": "^31.7.7",
+    "electron-builder": "^26.8.1",
+    "electron-packager": "^17.1.2",
+    "electron-vite": "^5.0.0",
+    "eslint": "^9.39.1",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-react-refresh": "^0.4.24",
+    "globals": "^16.5.0",
+    "lucide-react": "^0.575.0",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.48.0",
+    "vite": "^7.3.1"
+  },
+  "build": {
+    "appId": "com.nebula.assistant",
+    "productName": "Nebula Interview AI",
+    "directories": {
+      "output": "dist_electron"
+    },
+    "files": [
+      "dist/**/*",
+      "main.js",
+      "preload.js",
+      "public/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "resources/engine_sidecar.exe",
+        "to": "engine_sidecar.exe"
+      }
+    ],
+    "win": {
+      "forceCodeSigning": false,
+      "target": [
+        "nsis"
+      ],
+      "icon": "build/icon.ico",
+      "artifactName": "Nebula_v1.2.1_FINAL.exe"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": "always",
+      "createStartMenuShortcut": true,
+      "allowElevation": true,
+      "shortcutName": "Nebula Assistant",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "installerHeaderIcon": "build/icon.ico",
+      "installerSidebar": "build/installer_banner.png",
+      "uninstallerSidebar": "build/installer_banner.png",
+      "runAfterFinish": true
+    },
+    "publish": [
+      {
+        "provider": "generic",
+        "url": "https://www.nebulainterviewai.com/updates/"
+      }
+    ]
+  }
+}
