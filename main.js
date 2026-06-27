@@ -31,6 +31,8 @@ function logToFile(msg) {
 let mainWindow = null;
 let sidecarProcess = null;
 let tray = null;
+let sidecarRestartAttempts = 0;
+let sidecarEverStarted = false;
 const windowStatePath = join(app.getPath('userData'), 'window-state.json');
 
 function loadWindowState() {
@@ -469,22 +471,42 @@ function startSidecar() {
 
     sidecarProcess.on('exit', (code, signal) => {
         logToFile(`Sidecar Process exited with code ${code} and signal ${signal}`);
-        
-        if (code !== 0 && restartAttempts < MAX_RESTARTS) {
-            restartAttempts++;
-            logToFile(`Sidecar crashed! Attempting restart ${restartAttempts}/${MAX_RESTARTS}...`);
-            setTimeout(() => {
-                if (!app.isQuitting) startSidecar();
-            }, 2000);
-        } else {
-            if (mainWindow && !mainWindow.isDestroyed() && mainWindow.webContents) {
-                mainWindow.webContents.send('error-received', { msg: 'Connection Lost' });
-            }
+
+        // Reset attempts on clean exit (code 0 = intentional shutdown)
+        if (code === 0) {
+            sidecarRestartAttempts = 0;
+            logToFile(`Sidecar exited cleanly. No restart needed.`);
+            return;
         }
+
+        // Exponential backoff: 2s, 4s, 8s, 16s, 32s, capped at 60s
+        sidecarRestartAttempts++;
+        const delay = Math.min(2000 * Math.pow(2, sidecarRestartAttempts - 1), 60000);
+        logToFile(`Sidecar crashed! Attempting restart ${sidecarRestartAttempts} in ${delay}ms...`);
+
+        // Notify UI
+        if (mainWindow && !mainWindow.isDestroyed() && mainWindow.webContents) {
+            mainWindow.webContents.send('status-received', { msg: `Sidecar restarting (${sidecarRestartAttempts})...`, is_error: false });
+        }
+
+        setTimeout(() => {
+            if (!app.isQuitting) {
+                startSidecar();
+            }
+        }, delay);
     });
 
     let sidecarBuffer = '';
+    let sidecarStarted = false;
+
     sidecarProcess.stdout.on('data', (data) => {
+        // Sidecar sent data = it's alive. Reset restart counter on first message.
+        if (!sidecarStarted) {
+            sidecarStarted = true;
+            sidecarRestartAttempts = 0;
+            logToFile(`Sidecar confirmed alive. Restart counter reset.`);
+        }
+
         sidecarBuffer += data.toString();
         const lines = sidecarBuffer.split('\n');
 

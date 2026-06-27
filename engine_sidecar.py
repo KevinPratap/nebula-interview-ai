@@ -27,6 +27,7 @@ if sys.stdin: sys.stdin.reconfigure(line_buffering=True)
 from core.audio_service import AudioService
 from core.ai_service import AIService, PROVIDER_MODEL_LISTS, PROVIDER_DEFAULT_MODELS
 from core.settings_manager import SettingsManager
+from core.transcript_manager import TranscriptManager
 from core.utils import log_debug
 
 log_debug("Sidecar Starting...")
@@ -51,6 +52,7 @@ class SidecarEngine:
         self.linked_files = {}           # v51.52: Tracking file count
         self.vision_buffer = []          # v51.80: Vision analysis buffer
         self.audio_pump = None           # v1.3.0: Bluetooth audio duplication pump
+        self.transcript = TranscriptManager()  # Meeting notes backbone
         
         self.audio.on_transcript_callback = self.on_transcript
         self.ai.on_response_callback = self.on_ai_response
@@ -130,7 +132,10 @@ class SidecarEngine:
         
         self.transcript_buffer.append(text)
         self.last_transcript_time = time.time()
-        
+
+        # Feed to transcript manager for meeting notes
+        self.transcript.add_entry(text, source)
+
         if self.ai.is_generating:
             sys.stderr.write("DEBUG: Interruption detected! Merging context...\n")
             sys.stderr.flush()
@@ -325,6 +330,54 @@ class SidecarEngine:
 
         elif action == "clear-snapshots": # v51.80: Multi-shot Support
             threading.Thread(target=self._clear_snapshots, args=(payload,), daemon=True).start()
+
+        # --- Meeting Notes Commands ---
+        elif action == "start-session":
+            self.transcript.start_session(payload or "")
+            self.send_to_electron("status", {"msg": "Session recording started"})
+            self.send_to_electron("session-status", self.transcript.get_stats())
+
+        elif action == "end-session":
+            path = self.transcript.end_session()
+            if path:
+                self.send_to_electron("status", {"msg": f"Session saved: {os.path.basename(path)}"})
+            else:
+                self.send_to_electron("status", {"msg": "No transcript to save"})
+            self.send_to_electron("session-status", self.transcript.get_stats())
+
+        elif action == "save-session":
+            title = payload or ""
+            path = self.transcript.save_session(title)
+            if path:
+                self.send_to_electron("status", {"msg": f"Transcript saved: {os.path.basename(path)}"})
+            else:
+                self.send_to_electron("error", {"msg": "No transcript to save"})
+
+        elif action == "generate-meeting-notes":
+            title = payload or ""
+            path = self.transcript.end_session()
+            if not path:
+                self.send_to_electron("error", {"msg": "No transcript to process"})
+                return
+            groq_key = self.ai.groq_key
+            result = self.transcript.generate_meeting_notes(groq_key=groq_key, title=title)
+            if "error" in result and result["error"]:
+                self.send_to_electron("error", {"msg": f"Notes generation: {result['error']}"})
+            else:
+                self.send_to_electron("status", {"msg": "Meeting notes ready"})
+                self.send_to_electron("notes-ready", result)
+
+        elif action == "get-session-status":
+            self.send_to_electron("session-status", self.transcript.get_stats())
+
+        elif action == "get-saved-notes":
+            notes = self.transcript.get_saved_notes()
+            self.send_to_electron("saved-notes", notes)
+
+        elif action == "clear-transcript":
+            self.transcript.clear()
+            self.send_to_electron("status", {"msg": "Transcript cleared"})
+            self.send_to_electron("session-status", self.transcript.get_stats())
 
         elif action == "get-settings":
             self.send_to_electron("settings-data", self.settings.settings)

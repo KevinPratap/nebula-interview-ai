@@ -1,0 +1,68 @@
+:root {
+  /* Colors */
+  --bg-mica: rgba(10, 10, 12, 0.45);
+  --accent-primary: #38bdf8;
+  --accent-glow: rgba(56, 189, 248, 0.2);
+  --text-vibrant: #ffffff;
+  --text-secondary: #bdbdbd;
+  --text-dim: #888888;
+  --border-fluent: rgba(255, 255, 255, 0.08);
+  
+  /* Grids & Spacing */
+  --grid-unit: 8px;
+  --radius-lg: 8px;
+  --radius-md: 4px;
+  
+  /* Layout */
+  --pill-width: 420px;
+  --pill-height: 80px;
+
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: dark;
+  color: var(--text-vibrant);
+  background-color: transparent;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html {
+  background-color: transparent;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  display: flex;
+  place-items: center;
+  min-width: 320px;
+  min-height: 100vh;
+  background-color: transparent;
+  overflow: hidden;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: inherit;
+  transition: all 0.05s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+button:hover {
+  filter: brightness(1.2);
+}
+
+button:active {
+  transform: scale(0.95);
+}

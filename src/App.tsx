@@ -34,7 +34,7 @@ declare global {
   }
 }
 
-type DrawerMode = 'response' | 'account' | 'settings' | 'strategy' | 'chat' | 'history';
+type DrawerMode = 'response' | 'account' | 'settings' | 'strategy' | 'chat' | 'history' | 'notes';
 
 const springGentle: any = { type: "spring", stiffness: 300, damping: 30 };
 
@@ -208,6 +208,10 @@ function App() {
   const liveTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const [linkedFilesCount, setLinkedFilesCount] = useState(0)
   const [snapshotsCount, setSnapshotsCount] = useState(0)
+
+  // Meeting Notes state
+  const [sessionStatus, setSessionStatus] = useState<any>({ entries: 0, questions: 0, duration_seconds: 0, is_active: false, last_saved: '' })
+  const [savedNotes, setSavedNotes] = useState<any[]>([])
 
   const [availableModels, setAvailableModels] = useState<{ [provider: string]: string[] }>({})
   const [modelSelections, setModelSelections] = useState<{ [provider: string]: string }>({})
@@ -559,6 +563,23 @@ function App() {
       setUpdateStatus("RESTART REQUIRED");
     }));
 
+    // Meeting Notes IPC listeners
+    subs.push(window.electron?.ipcRenderer.on('session-status', (s: any) => {
+      console.log("UI: Session status:", s);
+      setSessionStatus(s);
+    }));
+    subs.push(window.electron?.ipcRenderer.on('saved-notes', (notes: any[]) => {
+      console.log("UI: Saved notes:", notes?.length || 0);
+      setSavedNotes(notes || []);
+    }));
+    subs.push(window.electron?.ipcRenderer.on('notes-ready', (result: any) => {
+      console.log("UI: Meeting notes ready:", result);
+      if (result?.path) {
+        setStatus(`Notes saved: ${result.path.split(/[/\\]/).pop()}`);
+      }
+      window.electron?.ipcRenderer.send('send-to-sidecar', { action: 'get-saved-notes' });
+    }));
+
     subs.push(window.electron?.ipcRenderer.on('hotkey-action', (action: string) => {
       console.log(`UI: [IPC] hotkey-action received: ${action}`);
       switch (action) {
@@ -815,6 +836,25 @@ function App() {
                 onClick={() => handleLockedClick('history')}
               >
                 <History size={18} />
+              </button>
+            </Tooltip>
+
+            <Tooltip disabled={!settings.show_tooltips} label="Meeting Notes" description="View transcript, save sessions, and generate AI meeting summaries." position="bottom" delay={0.2}>
+              <button
+                className={`icon-circle no-drag ${drawerMode === 'notes' && drawerOpen ? 'btn-accent' : ''}`}
+                onClick={() => {
+                  window.electron?.ipcRenderer.send('send-to-sidecar', { action: 'get-session-status' });
+                  window.electron?.ipcRenderer.send('send-to-sidecar', { action: 'get-saved-notes' });
+                  toggleDrawer('notes');
+                }}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                  <line x1="16" y1="13" x2="8" y2="13"/>
+                  <line x1="16" y1="17" x2="8" y2="17"/>
+                  <line x1="10" y1="9" x2="8" y2="9"/>
+                </svg>
               </button>
             </Tooltip>
 
@@ -1171,6 +1211,104 @@ function App() {
                         </div>
                       ))
                     )}
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Meeting Notes */}
+              {drawerMode === 'notes' && (
+                <motion.div
+                  key="notes-view"
+                  initial={{ opacity: 0, x: 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -10 }}
+                  transition={{ duration: 0.2 }}
+                  className="view-content"
+                  style={{ maxHeight: '500px', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+                >
+                  <div className="view-header">
+                    <h2><span className="header-slash">//</span> MEETING NOTES</h2>
+                  </div>
+
+                  <div className="scroll-y" style={{ flex: 1, padding: '0 8px' }}>
+                    {/* Session status bar */}
+                    <div className="setting-card" style={{ marginBottom: '12px', padding: '12px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                        <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>SESSION</span>
+                        <span style={{ fontSize: '12px', color: sessionStatus.is_active ? 'var(--accent-primary)' : 'var(--text-dim)' }}>
+                          {sessionStatus.is_active ? 'LIVE' : 'IDLE'}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', gap: '16px', fontSize: '13px' }}>
+                        <span><strong>{sessionStatus.entries}</strong> utterances</span>
+                        <span><strong>{sessionStatus.questions}</strong> questions</span>
+                        <span><strong>{Math.floor(sessionStatus.duration_seconds / 60)}m {sessionStatus.duration_seconds % 60}s</strong></span>
+                      </div>
+                    </div>
+
+                    {/* Action buttons */}
+                    <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                      <button className="btn-strategy-action" style={{ flex: 1, justifyContent: 'center' }}
+                        onClick={() => window.electron?.ipcRenderer.send('send-to-sidecar', { action: 'start-session', payload: 'Live Session' })}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style={{ marginRight: '4px' }}><circle cx="12" cy="12" r="8"/></svg> Start
+                      </button>
+                      <button className="btn-strategy-action" style={{ flex: 1, justifyContent: 'center' }}
+                        onClick={() => window.electron?.ipcRenderer.send('send-to-sidecar', { action: 'save-session' })}
+                        disabled={!sessionStatus.entries}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '4px' }}><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save
+                      </button>
+                      <button className="btn-strategy-action" style={{ flex: 1, justifyContent: 'center' }}
+                        onClick={() => {
+                          const title = prompt('Session title:', 'Interview');
+                          window.electron?.ipcRenderer.send('send-to-sidecar', { action: 'generate-meeting-notes', payload: title || 'Session' });
+                        }}
+                        disabled={!sessionStatus.entries}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '4px' }}><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> Notes
+                      </button>
+                    </div>
+
+                    {/* Utility buttons */}
+                    <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                      <button className="btn-strategy-action" style={{ flex: 1, justifyContent: 'center', opacity: 0.6 }}
+                        onClick={() => { if (confirm('Clear current transcript?')) window.electron?.ipcRenderer.send('send-to-sidecar', { action: 'clear-transcript' }); }}
+                        disabled={!sessionStatus.entries}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '4px' }}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Clear
+                      </button>
+                      <button className="btn-strategy-action" style={{ flex: 1, justifyContent: 'center' }}
+                        onClick={() => window.electron?.ipcRenderer.send('send-to-sidecar', { action: 'get-saved-notes' })}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '4px' }}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> Refresh
+                      </button>
+                    </div>
+
+                    {/* Saved notes list */}
+                    <div className="settings-section">
+                      <h3>SAVED NOTES</h3>
+                      <div className="setting-card">
+                        {savedNotes.length === 0 ? (
+                          <div style={{ padding: '12px', textAlign: 'center', fontSize: '12px', color: 'var(--text-dim)' }}>
+                            No saved notes yet. Start a session and save it.
+                          </div>
+                        ) : (
+                          savedNotes.slice(0, 10).map((note: any, idx: number) => (
+                            <div key={idx} className="setting-row"
+                              style={{ cursor: 'pointer', borderBottom: idx < savedNotes.length - 1 ? '1px solid var(--border-color)' : 'none' }}
+                              onClick={() => setStatus(`Notes: ${note.filename}`)}>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', overflow: 'hidden' }}>
+                                <span style={{ fontSize: '12px', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                  {note.filename}
+                                </span>
+                                <span style={{ fontSize: '10px', color: 'var(--text-dim)' }}>
+                                  {new Date(note.modified).toLocaleString()} · {(note.size / 1024).toFixed(1)}KB
+                                </span>
+                              </div>
+                              {(note.filename.includes('summary') || note.filename.includes('enhanced')) && (
+                                <span style={{ fontSize: '10px', color: 'var(--accent-primary)', marginLeft: '8px' }}>AI</span>
+                              )}
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </motion.div>
               )}
