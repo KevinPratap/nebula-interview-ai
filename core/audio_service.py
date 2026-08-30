@@ -74,12 +74,72 @@ class AudioService:
             self._thread.join(timeout=1.0)
 
     def _run(self):
-        self._record_thread = threading.Thread(target=self._record_loop, daemon=True)
+        # v1.3.1: soundcard WASAPI loopback is the PRIMARY capture path (follows the
+        # default output device - Bluetooth speakers/headphones included). PyAudio
+        # Stereo Mix is the fallback (it only captures the analog Realtek path and
+        # returns silence when the default output is Bluetooth, e.g. Echo Dot).
+        try:
+            use_sc = self.use_loopback
+            if self.device_index is not None and not str(self.device_index).startswith("[System Loopback]"):
+                use_sc = False  # explicit Stereo Mix / mic selection -> pyaudio path
+            if use_sc:
+                import soundcard  # noqa: F401 - probe availability
+                self._record_thread = threading.Thread(target=self._record_loop_soundcard, daemon=True)
+                sys.stderr.write("DEBUG: Audio capture: soundcard WASAPI loopback (follows default output)\n")
+                sys.stderr.flush()
+            else:
+                raise ImportError("fallback")
+        except ImportError:
+            self._record_thread = threading.Thread(target=self._record_loop, daemon=True)
+            sys.stderr.write("DEBUG: Audio capture: PyAudio Stereo Mix fallback\n")
+            sys.stderr.flush()
         self._record_thread.start()
         self._process_loop()
         self.is_listening = False
         if self._record_thread and self._record_thread.is_alive():
             self._record_thread.join(timeout=1.0)
+
+    def _record_loop_soundcard(self):
+        """WASAPI loopback via soundcard, following the DEFAULT output device.
+        Re-resolves the endpoint every 5s so switching speakers/headphones is picked up.
+        Pushes numpy float32 mono 100ms blocks (48000Hz) into the same queue."""
+        import soundcard as sc
+        rate = 48000
+        last_resolve = 0.0
+        mic = None
+        while self.is_listening:
+            try:
+                if mic is None or (time.time() - last_resolve) > 5.0:
+                    default_speaker = sc.default_speaker()
+                    loopbacks = [m for m in sc.all_microphones(include_loopback=True) if m.isloopback]
+                    mic = None
+                    if default_speaker is not None:
+                        for lb in loopbacks:
+                            if lb.name.strip().lower() == default_speaker.name.strip().lower():
+                                mic = lb
+                                break
+                    if mic is None and loopbacks:
+                        mic = loopbacks[0]
+                    last_resolve = time.time()
+                    if mic is not None:
+                        self.active_device_name = mic.name
+                        sys.stderr.write(f"DEBUG: Loopback capture -> [{mic.name}]\n")
+                        sys.stderr.flush()
+                if mic is None:
+                    time.sleep(1)
+                    continue
+                with mic.recorder(samplerate=rate, channels=2) as rec:
+                    while self.is_listening:
+                        data = rec.record(numframes=rate // 10)
+                        a = np.asarray(data, dtype=np.float32)
+                        if a.ndim > 1:
+                            a = a.mean(axis=1)
+                        a = np.ascontiguousarray(a, dtype=np.float32)
+                        self.queue.put((a, rate))
+            except Exception as e:
+                sys.stderr.write(f"DEBUG: Soundcard loopback error: {e}\n")
+                sys.stderr.flush()
+                time.sleep(1)
 
     def _get_best_loopback_device(self):
         """Locates the loopback/stereo mix device or uses the manually selected one.
