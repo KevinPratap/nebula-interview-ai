@@ -741,8 +741,8 @@ function App() {
     const newSettings = { ...settings, interview_mode: nextState };
     setSettings(newSettings);
     window.electron?.ipcRenderer.send('send-to-sidecar', {
-      action: 'save-settings',
-      payload: newSettings
+      action: 'update-setting',
+      payload: { key: 'interview_mode', val: nextState }
     });
     if (nextState) {
       if (!isLive) {
