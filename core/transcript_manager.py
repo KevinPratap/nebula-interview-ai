@@ -142,7 +142,7 @@ class TranscriptManager:
                 offset = entry.timestamp - start
                 mins = int(offset // 60)
                 secs = int(offset % 60)
-                q_mark = " ❓" if entry.is_question else ""
+                q_mark = " [Q]" if entry.is_question else ""
                 parts.append(f"[{mins:02d}:{secs:02d}]{q_mark} {entry.text}")
             return "\n".join(parts)
 
@@ -267,7 +267,7 @@ class TranscriptManager:
             mins = int(offset // 60)
             secs = int(offset % 60)
             source_tag = f" [{entry.source}]" if entry.source != "Internal Audio" else ""
-            q_mark = " ❓" if entry.is_question else ""
+            q_mark = " [Q]" if entry.is_question else ""
             lines.append(f"**[{mins:02d}:{secs:02d}]{q_mark}{source_tag}** {entry.text}")
             lines.append("")
 

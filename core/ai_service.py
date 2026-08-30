@@ -436,7 +436,7 @@ class AIWorker:
                             for img_bytes in self.image_list:
                                 parts.append(PIL.Image.open(io.BytesIO(img_bytes)))
                                 
-                            response = model.generate_content(parts, stream=True)
+                            response = model.generate_content(parts, stream=True, request_options={"timeout": 30})
                             full_text = ""
                             for chunk in response:
                                 if self.stop_event.is_set(): return
@@ -459,7 +459,7 @@ class AIWorker:
                         else:
                             # Chat fallback
                             chat = model.start_chat(history=gemini_history[:-1])
-                            response_stream = chat.send_message(last_msg_content, stream=True)
+                            response_stream = chat.send_message(last_msg_content, stream=True, request_options={"timeout": 30})
                             full_text = ""
                             for chunk in response_stream:
                                 if self.stop_event.is_set(): return
