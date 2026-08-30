@@ -369,7 +369,7 @@ body {
   justify-content: center;
   cursor: default !important;
   z-index: 100;
-  transition: all 0.15s cubic-bezier(0.25, 0.8, 0.25, 1);
+  transition: transform 0.15s ease-out, opacity 0.15s ease-out, background-color 0.15s ease-out, border-color 0.15s ease-out, box-shadow 0.15s ease-out;
 }
 
 .drawer-close-btn:hover {
@@ -504,7 +504,7 @@ body {
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3) !important;
   white-space: nowrap !important;
   max-width: fit-content !important;
-  transition: all 0.05s cubic-bezier(0.23, 1, 0.32, 1) !important;
+  transition: transform 0.15s ease-out, opacity 0.15s ease-out, background-color 0.15s ease-out, border-color 0.15s ease-out, box-shadow 0.15s ease-out !important;
   cursor: default !important;
 }
 
@@ -614,7 +614,7 @@ body {
   color: var(--text-secondary);
   cursor: default;
   border-radius: 8px;
-  transition: all 0.15s cubic-bezier(0.25, 0.8, 0.25, 1);
+  transition: transform 0.15s ease-out, opacity 0.15s ease-out, background-color 0.15s ease-out, border-color 0.15s ease-out, box-shadow 0.15s ease-out;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   white-space: nowrap;
@@ -636,7 +636,7 @@ body {
   overflow: hidden;
   min-width: 140px;
   min-height: 42px; /* Standardize with other premium inputs */
-  transition: all 0.15s cubic-bezier(0.25, 0.8, 0.25, 1);
+  transition: transform 0.15s ease-out, opacity 0.15s ease-out, background-color 0.15s ease-out, border-color 0.15s ease-out, box-shadow 0.15s ease-out;
 }
 
 .premium-stepper:hover {
@@ -653,7 +653,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.15s cubic-bezier(0.25, 0.8, 0.25, 1);
+  transition: transform 0.15s ease-out, opacity 0.15s ease-out, background-color 0.15s ease-out, border-color 0.15s ease-out, box-shadow 0.15s ease-out;
   padding: 0;
   border-radius: 10px;
 }
@@ -724,7 +724,7 @@ body {
   align-items: center;
   justify-content: center;
   cursor: default;
-  transition: all 0.15s cubic-bezier(0.25, 0.8, 0.25, 1);
+  transition: transform 0.15s ease-out, opacity 0.15s ease-out, background-color 0.15s ease-out, border-color 0.15s ease-out, box-shadow 0.15s ease-out;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   position: relative;
@@ -781,7 +781,7 @@ body {
   background: rgba(255, 255, 255, 0.08);
   color: var(--text-main);
   cursor: default;
-  transition: all 0.15s cubic-bezier(0.25, 0.8, 0.25, 1);
+  transition: transform 0.15s ease-out, opacity 0.15s ease-out, background-color 0.15s ease-out, border-color 0.15s ease-out, box-shadow 0.15s ease-out;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -842,7 +842,7 @@ body {
   font-weight: 900;
   letter-spacing: 0.8px;
   cursor: default;
-  transition: all 0.15s cubic-bezier(0.25, 0.8, 0.25, 1);
+  transition: transform 0.15s ease-out, opacity 0.15s ease-out, background-color 0.15s ease-out, border-color 0.15s ease-out, box-shadow 0.15s ease-out;
   border: 1px solid transparent;
 }
 
@@ -965,7 +965,7 @@ body {
   letter-spacing: 1px;
   color: var(--text-secondary); /* Better contrast than text-dim */
   text-transform: uppercase;
-  transition: all 0.15s cubic-bezier(0.25, 0.8, 0.25, 1);
+  transition: transform 0.15s ease-out, opacity 0.15s ease-out, background-color 0.15s ease-out, border-color 0.15s ease-out, box-shadow 0.15s ease-out;
   position: relative;
   cursor: default;
 }
@@ -990,7 +990,7 @@ body {
 
 .mgmt-btn svg {
   opacity: 0.8; /* Higher base visibility */
-  transition: opacity 0.08s, transform 0.08s;
+  transition: opacity 0.15s ease-out, transform 0.15s ease-out;
 }
 
 .mgmt-btn:hover svg {
@@ -1119,7 +1119,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.12s cubic-bezier(0.25, 0.8, 0.25, 1);
+  transition: transform 0.15s ease-out, opacity 0.15s ease-out, background-color 0.15s ease-out, border-color 0.15s ease-out, box-shadow 0.15s ease-out;
 }
 
 .icon-circle:hover {
@@ -1148,7 +1148,7 @@ body {
   background: rgba(255, 255, 255, 0.1) !important;
   border: 1.5px solid var(--accent-primary) !important;
   box-shadow: 0 0 15px rgba(var(--accent-rgb), 0.3);
-  transition: all 0.08s cubic-bezier(0.23, 1, 0.32, 1) !important;
+  transition: transform 0.15s ease-out, opacity 0.15s ease-out, background-color 0.15s ease-out, border-color 0.15s ease-out, box-shadow 0.15s ease-out !important;
 }
 
 .btn-master:hover {
@@ -1177,7 +1177,7 @@ body {
   border-radius: 14px;
   font-size: 14px;
   font-weight: 600;
-  transition: all 0.05s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.15s ease-out, opacity 0.15s ease-out, background-color 0.15s ease-out, border-color 0.15s ease-out, box-shadow 0.15s ease-out;
   appearance: none;
   -webkit-appearance: none;
 }
@@ -1222,7 +1222,7 @@ body {
   align-items: center;
   padding: 14px 16px;
   cursor: default;
-  transition: background 0.15s cubic-bezier(0.25, 0.8, 0.25, 1);
+  transition: background-color 0.15s ease-out;
 }
 .setting-row:not(:last-child) {
   border-bottom: 1px solid rgba(255, 255, 255, 0.04);
@@ -1267,7 +1267,7 @@ body {
   border-radius: 20px;
   padding: 4px;
   cursor: default;
-  transition: background 0.08s;
+  transition: background-color 0.15s ease-out;
   display: flex;
   align-items: center;
   justify-content: flex-start;
@@ -1748,7 +1748,7 @@ body {
   font-size: 13px;
   font-weight: 600;
   font-family: inherit;
-  transition: border-color 0.05s, background 0.05s;
+  transition: border-color 0.15s ease-out, background 0.15s ease-out;
   outline: none;
   box-sizing: border-box;
 }
@@ -1798,7 +1798,7 @@ body {
   letter-spacing: 0.02em;
   color: var(--accent-primary);
   font-family: 'SF Mono', 'Fira Mono', 'Cascadia Code', monospace;
-  transition: all 0.05s;
+  transition: transform 0.15s ease-out, opacity 0.15s ease-out, background-color 0.15s ease-out, border-color 0.15s ease-out, box-shadow 0.15s ease-out;
 }
 
 .session-timer.urgent {
@@ -1886,7 +1886,7 @@ body {
   background: rgba(0, 0, 0, 0.3);
   border: 1px solid var(--glass-edge);
   overflow: hidden;
-  transition: border-color 0.05s;
+  transition: border-color 0.15s ease-out;
 }
 
 .code-block-container:hover {
@@ -1920,7 +1920,7 @@ body {
   font-size: 12px;
   font-weight: 700;
   cursor: default;
-  transition: all 0.05s;
+  transition: transform 0.15s ease-out, opacity 0.15s ease-out, background-color 0.15s ease-out, border-color 0.15s ease-out, box-shadow 0.15s ease-out;
 }
 
 .copy-btn:hover {
@@ -1977,7 +1977,7 @@ body {
   letter-spacing: 0.5px;
   border-radius: 6px;
   cursor: default;
-  transition: all 0.15s cubic-bezier(0.25, 0.8, 0.25, 1);
+  transition: transform 0.15s ease-out, opacity 0.15s ease-out, background-color 0.15s ease-out, border-color 0.15s ease-out, box-shadow 0.15s ease-out;
 }
 
 .auth-toggle-btn.active {
@@ -2027,7 +2027,7 @@ body {
   cursor: default;
   padding: 0;
   font-size: 12px;
-  transition: opacity 0.05s;
+  transition: opacity 0.15s ease-out;
 }
 
 .auth-signup-link:hover {
@@ -2045,7 +2045,7 @@ body {
   border: 1px solid var(--border-glass);
   border-radius: 16px;
   margin: 16px 24px;
-  transition: all 0.15s cubic-bezier(0.25, 0.8, 0.25, 1);
+  transition: transform 0.15s ease-out, opacity 0.15s ease-out, background-color 0.15s ease-out, border-color 0.15s ease-out, box-shadow 0.15s ease-out;
   box-shadow: var(--shadow-deep);
 }
 
@@ -2090,7 +2090,7 @@ body {
   align-items: center;
   justify-content: center;
   cursor: default;
-  transition: all 0.15s cubic-bezier(0.25, 0.8, 0.25, 1);
+  transition: transform 0.15s ease-out, opacity 0.15s ease-out, background-color 0.15s ease-out, border-color 0.15s ease-out, box-shadow 0.15s ease-out;
 }
 
 .chat-send-btn:hover {
@@ -2130,7 +2130,7 @@ body {
 .nebula-response-card::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.08);
   border-radius: 10px;
-  transition: all 0.08s;
+  transition: background-color 0.15s ease-out;
 }
 
 .nebula-response-card::-webkit-scrollbar-thumb:hover {
@@ -2153,7 +2153,7 @@ body {
   align-items: center;
   justify-content: space-between;
   cursor: default;
-  transition: all 0.15s cubic-bezier(0.25, 0.8, 0.25, 1);
+  transition: transform 0.15s ease-out, opacity 0.15s ease-out, background-color 0.15s ease-out, border-color 0.15s ease-out, box-shadow 0.15s ease-out;
 }
 
 .premium-dropdown-header:hover {
@@ -2206,7 +2206,7 @@ body {
   font-weight: 600;
   /* v51.16 */
   cursor: default;
-  transition: all 0.04s;
+  transition: transform 0.15s ease-out, opacity 0.15s ease-out, background-color 0.15s ease-out, border-color 0.15s ease-out, box-shadow 0.15s ease-out;
   margin-bottom: 2px;
 }
 
@@ -2346,7 +2346,7 @@ body {
   font-size: 12px !important;
   font-weight: 700 !important;
   cursor: default !important;
-  transition: all 0.05s cubic-bezier(0.23, 1, 0.32, 1) !important;
+  transition: transform 0.15s ease-out, opacity 0.15s ease-out, background-color 0.15s ease-out, border-color 0.15s ease-out, box-shadow 0.15s ease-out !important;
   -webkit-app-region: no-drag !important;
   pointer-events: auto !important;
 }
@@ -2375,7 +2375,7 @@ body {
   color: var(--text-secondary) !important;
   line-height: 1.7 !important;
   resize: none;
-  transition: all 0.15s cubic-bezier(0.25, 0.8, 0.25, 1);
+  transition: transform 0.15s ease-out, opacity 0.15s ease-out, background-color 0.15s ease-out, border-color 0.15s ease-out, box-shadow 0.15s ease-out;
   margin-top: 16px;
 }
 
@@ -2400,7 +2400,7 @@ body {
   border: none !important;
   box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3) !important;
   cursor: default !important;
-  transition: all 0.05s cubic-bezier(0.23, 1, 0.32, 1) !important;
+  transition: transform 0.15s ease-out, opacity 0.15s ease-out, background-color 0.15s ease-out, border-color 0.15s ease-out, box-shadow 0.15s ease-out !important;
   -webkit-app-region: no-drag !important;
 }
 
@@ -2484,7 +2484,7 @@ body {
   padding: 10px;
   border-radius: 6px;
   cursor: pointer;
-  transition: all 0.15s cubic-bezier(0.25, 0.8, 0.25, 1);
+  transition: transform 0.15s ease-out, opacity 0.15s ease-out, background-color 0.15s ease-out, border-color 0.15s ease-out, box-shadow 0.15s ease-out;
 }
 
 .star-step-btn:hover {
@@ -2601,7 +2601,7 @@ body {
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.15s cubic-bezier(0.25, 0.8, 0.25, 1);
+  transition: transform 0.15s ease-out, opacity 0.15s ease-out, background-color 0.15s ease-out, border-color 0.15s ease-out, box-shadow 0.15s ease-out;
 }
 
 .tab-btn:hover {
@@ -2760,7 +2760,7 @@ body {
   font-weight: 600;
   color: var(--text-secondary);
   cursor: default;
-  transition: all 0.15s cubic-bezier(0.25, 0.8, 0.25, 1);
+  transition: transform 0.15s ease-out, opacity 0.15s ease-out, background-color 0.15s ease-out, border-color 0.15s ease-out, box-shadow 0.15s ease-out;
 }
 
 .chat-starter-chip:hover {
@@ -2806,7 +2806,7 @@ body {
   font-size: 12px;
   font-weight: 700;
   cursor: default;
-  transition: all 0.1s cubic-bezier(0.25, 0.8, 0.25, 1);
+  transition: transform 0.15s ease-out, opacity 0.15s ease-out, background-color 0.15s ease-out, border-color 0.15s ease-out, box-shadow 0.15s ease-out;
   -webkit-app-region: no-drag;
 }
 
@@ -2999,7 +2999,7 @@ body {
   font-size: 13px;
   font-family: 'SF Mono', 'Fira Code', monospace;
   outline: none;
-  transition: all 0.15s cubic-bezier(0.25, 0.8, 0.25, 1);
+  transition: transform 0.15s ease-out, opacity 0.15s ease-out, background-color 0.15s ease-out, border-color 0.15s ease-out, box-shadow 0.15s ease-out;
   -webkit-app-region: no-drag;
 }
 
@@ -3082,7 +3082,7 @@ body {
   font-size: 12px;
   font-weight: 800;
   cursor: default;
-  transition: all 0.1s;
+  transition: transform 0.15s ease-out, opacity 0.15s ease-out, background-color 0.15s ease-out, border-color 0.15s ease-out, box-shadow 0.15s ease-out;
   -webkit-app-region: no-drag;
 }
 
@@ -3142,7 +3142,8 @@ body {
   height: 4px;
   border-radius: 1px;
   background: var(--text-dim);
-  transition: height 0.08s ease, background-color 0.08s ease;
+  /* Layout height animated for audio VU bars */
+  transition: height 0.15s ease, background-color 0.15s ease;
 }
 
 .vu-bar:nth-child(1).active {
@@ -3196,7 +3197,7 @@ body {
   font-size: 13px;
   font-family: var(--font-system);
   outline: none;
-  transition: border-color 0.15s;
+  transition: border-color 0.15s ease-out;
 }
 
 .practice-search-input:focus {
@@ -3219,7 +3220,7 @@ body {
   border: 1px solid var(--border-glass);
   background: rgba(255, 255, 255, 0.04);
   color: var(--text-secondary);
-  transition: all 0.15s ease;
+  transition: transform 0.15s ease-out, opacity 0.15s ease-out, background-color 0.15s ease-out, border-color 0.15s ease-out, box-shadow 0.15s ease-out;
 }
 
 .practice-cat-btn:hover {
@@ -3250,7 +3251,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
-  transition: border-color 0.15s, background 0.15s;
+  transition: border-color 0.15s ease-out, background 0.15s ease-out;
 }
 
 .practice-card:hover {
@@ -3317,7 +3318,7 @@ body {
   color: #0b0f19;
   border: none;
   cursor: pointer;
-  transition: transform 0.1s, filter 0.1s;
+  transition: transform 0.15s ease-out, filter 0.15s ease-out;
 }
 
 .practice-trigger-btn:hover {
@@ -3361,3 +3362,161 @@ body {
   font-weight: 600;
 }
 
+
+
+/* --- Key Status Chips & Provider Link Buttons (Task 3) --- */
+.key-status-chip {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.3px;
+  line-height: 1.2;
+}
+
+.key-status-chip.configured {
+  color: #34d399;
+  background: rgba(52, 211, 153, 0.12);
+  border: 1px solid rgba(52, 211, 153, 0.25);
+}
+
+.key-status-chip.not-set {
+  color: var(--text-dim);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-color);
+}
+
+.provider-links-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 12px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.provider-link-btn {
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--accent-primary);
+  cursor: pointer;
+  transition: transform 0.15s ease-out, opacity 0.15s ease-out, background-color 0.15s ease-out, border-color 0.15s ease-out, box-shadow 0.15s ease-out;
+}
+
+.provider-link-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: var(--accent-primary);
+}
+
+/* --- Guide Drawer View (Task 4) --- */
+.guide-drawer-view {
+  overflow-y: auto;
+}
+
+.guide-got-it-btn {
+  box-shadow: 0 4px 14px rgba(var(--accent-rgb), 0.3);
+  transition: transform 0.15s ease-out, opacity 0.15s ease-out, background-color 0.15s ease-out, border-color 0.15s ease-out, box-shadow 0.15s ease-out;
+}
+
+.guide-got-it-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(var(--accent-rgb), 0.45);
+}
+
+/* --- Connect Your AI Empty State Card (Task 6) --- */
+.connect-ai-card {
+  background: var(--bg-card, rgba(255, 255, 255, 0.03));
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.connect-ai-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.connect-ai-header h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-main);
+  letter-spacing: 0.3px;
+}
+
+.connect-ai-text {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.connect-ai-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.connect-ai-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  border-radius: 6px;
+  color: var(--text-main);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.15s ease-out, opacity 0.15s ease-out, background-color 0.15s ease-out, border-color 0.15s ease-out, box-shadow 0.15s ease-out;
+}
+
+.connect-ai-btn:hover {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: var(--accent-primary, #34d399);
+}
+
+.connect-ai-btn .btn-badge {
+  font-size: 11px;
+  color: var(--text-dim);
+  font-weight: 400;
+}
+
+.connect-ai-btn-secondary {
+  padding: 8px 12px;
+  background: transparent;
+  border: 1px dashed var(--border-color, rgba(255, 255, 255, 0.15));
+  border-radius: 6px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: center;
+  transition: transform 0.15s ease-out, opacity 0.15s ease-out, background-color 0.15s ease-out, border-color 0.15s ease-out, box-shadow 0.15s ease-out;
+}
+
+.connect-ai-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-main);
+  border-color: var(--border-color-focus, rgba(255, 255, 255, 0.3));
+}
+
+/* --- Live Listening Status Badge (Task 7) --- */
+.status-live,
+.brand-status.status-live {
+  color: #34d399 !important;
+  opacity: 1 !important;
+  font-weight: 600 !important;
+}

@@ -41,6 +41,7 @@ class SettingsManager:
             "always_on_top": True,
             "stealth_mode": False,
             "interview_mode": True,
+            "auto_answer": True,
             "opacity": 255,
             "theme": "Nebula Dark",
             "groq_api_key": os.environ.get("GROQ_API_KEY", ""),

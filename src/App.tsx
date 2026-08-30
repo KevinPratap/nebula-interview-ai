@@ -26,7 +26,8 @@ import {
   BookOpen,
   Sparkles,
   Search,
-  Award
+  Award,
+  HelpCircle
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import './App.css'
@@ -39,7 +40,7 @@ declare global {
   }
 }
 
-type DrawerMode = 'response' | 'account' | 'settings' | 'strategy' | 'chat' | 'history' | 'notes' | 'practice';
+type DrawerMode = 'response' | 'account' | 'settings' | 'strategy' | 'chat' | 'history' | 'notes' | 'practice' | 'guide';
 
 const springGentle: any = { type: "spring", stiffness: 300, damping: 30 };
 
@@ -271,7 +272,11 @@ function App() {
     }
   }, [drawerOpen, drawerMode]);
 
+  const isFirstLoadRef = useRef(true);
+
   const [settings, setSettings] = useState<any>({
+    auto_answer: true,
+    interview_mode: true,
     stealth_mode: false,
     save_transcripts: false,
     text_size: 15,
@@ -299,6 +304,21 @@ function App() {
   const [apiKeys, setApiKeys] = useState<{ groq: string; openai: string; gemini: string; anthropic: string; deepseek: string; openrouter: string }>({ groq: '', openai: '', gemini: '', anthropic: '', deepseek: '', openrouter: '' })
   const [visibleApiKeys, setVisibleApiKeys] = useState<{ groq: boolean; openai: boolean; gemini: boolean; anthropic: boolean; deepseek: boolean; openrouter: boolean }>({ groq: false, openai: false, gemini: false, anthropic: false, deepseek: false, openrouter: false })
   const apiKeyTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
+
+  const hasAnyKey = Boolean(
+    apiKeys.groq?.trim() ||
+    apiKeys.openai?.trim() ||
+    apiKeys.gemini?.trim() ||
+    apiKeys.anthropic?.trim() ||
+    apiKeys.deepseek?.trim() ||
+    apiKeys.openrouter?.trim() ||
+    settings.groq_api_key?.trim() ||
+    settings.openai_api_key?.trim() ||
+    settings.gemini_api_key?.trim() ||
+    settings.anthropic_api_key?.trim() ||
+    settings.deepseek_api_key?.trim() ||
+    settings.openrouter_api_key?.trim()
+  );
 
   const isAuthorized = true;
 
@@ -466,6 +486,30 @@ function App() {
       window.electron?.ipcRenderer.send('update-stealth', p.stealth_mode);
       window.electron?.ipcRenderer.send('set-opacity', p.opacity);
       window.electron?.ipcRenderer.send('re-register-hotkey', p);
+
+      // Boot state sync for interview mode (Task 2)
+      if (p.interview_mode === true) {
+        setIsLive(prev => {
+          if (!prev) {
+            window.electron?.ipcRenderer.send('toggle-listening', true);
+            setStatus("NEBULA: LISTENING...");
+            return true;
+          }
+          return prev;
+        });
+      }
+
+      // First-run guide auto-open (Task 4)
+      if (p.show_guide_startup === true && isFirstLoadRef.current) {
+        isFirstLoadRef.current = false;
+        setTimeout(() => {
+          setDrawerMode('guide');
+          setDrawerOpen(true);
+        }, 600);
+      }
+    }));
+    subs.push(window.electron?.ipcRenderer.on('api-keys-updated-received', () => {
+      showToast('API key saved', 'success');
     }));
     subs.push(window.electron?.ipcRenderer.on('api-keys-received', (p: any) => {
       setApiKeys({ groq: p.groq || '', openai: p.openai || '', gemini: p.gemini || '', anthropic: p.anthropic || '', deepseek: p.deepseek || '', openrouter: p.openrouter || '' });
@@ -882,7 +926,7 @@ function App() {
               </>
             )}
             <div className="brand-title">
-              NEBULA <span className={`brand-status ${isError ? 'error-text' : ''}`}>// {status}</span>
+              NEBULA <span className={`brand-status ${isError ? 'error-text' : (isLive && !settings.stealth_mode ? 'status-live' : '')}`}>// {status}</span>
             </div>
           </div>
 
@@ -1536,6 +1580,21 @@ function App() {
                           transition={{ duration: 0.15 }}
                         >
                           <div className="settings-section">
+                            <h3>GENERAL</h3>
+                            <div className="setting-card" style={{ marginBottom: '16px' }}>
+                              <Tooltip disabled={!settings.show_tooltips} label="Auto-Answer" description="Hear a question? Nebula answers automatically." position="bottom" delay={0.3}>
+                                <div className="setting-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '4px' }} onClick={() => updateSetting('auto_answer', settings.auto_answer !== false ? false : true)}>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                                    <span>Auto-Answer</span>
+                                    <Toggle checked={settings.auto_answer !== false} onChange={(v) => updateSetting('auto_answer', v)} />
+                                  </div>
+                                  <span style={{ fontSize: '12px', color: 'var(--text-dim)' }}>Hear a question? Nebula answers automatically.</span>
+                                </div>
+                              </Tooltip>
+                            </div>
+                          </div>
+
+                          <div className="settings-section">
                             <h3>PRIVACY</h3>
                             <div className="setting-card">
                               <Tooltip disabled={!settings.show_tooltips} label="Interview Mode" description="Automatically arm live loopback listening and STAR structured guidance on launch." position="bottom" delay={0.3}>
@@ -1758,6 +1817,26 @@ function App() {
                         >
                           <div className="settings-section">
                             <h3>PROVIDER KEYS</h3>
+                            <div className="provider-links-row" style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center', marginBottom: '12px', fontSize: '12px', color: 'var(--text-dim)' }}>
+                              <span>Add one key to enable answers. Links:</span>
+                              {[
+                                { label: 'Groq', url: 'https://console.groq.com/keys' },
+                                { label: 'OpenAI', url: 'https://platform.openai.com/api-keys' },
+                                { label: 'Gemini', url: 'https://aistudio.google.com/app/apikey' },
+                                { label: 'Anthropic', url: 'https://console.anthropic.com/settings/keys' },
+                                { label: 'DeepSeek', url: 'https://platform.deepseek.com/api_keys' },
+                                { label: 'OpenRouter', url: 'https://openrouter.ai/settings/keys' },
+                              ].map(p => (
+                                <button
+                                  key={p.label}
+                                  type="button"
+                                  className="provider-link-btn no-drag"
+                                  onClick={() => window.electron?.ipcRenderer.send('open-external-url', p.url)}
+                                >
+                                  {p.label}
+                                </button>
+                              ))}
+                            </div>
                             <div className="setting-card">
                               {([
                                 { key: 'groq', label: 'Groq', placeholder: 'gsk_...' },
@@ -1766,61 +1845,89 @@ function App() {
                                 { key: 'anthropic', label: 'Anthropic', placeholder: 'sk-ant-...' },
                                 { key: 'deepseek', label: 'DeepSeek', placeholder: 'sk-...' },
                                 { key: 'openrouter', label: 'OpenRouter', placeholder: 'sk-or-...' },
-                              ] as const).map(prov => (
-                                <div key={prov.key}>
-                                  <div className="setting-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '4px' }}>
-                                    <span>{prov.label} API Key</span>
-                                    <div style={{ display: 'flex', width: '100%', gap: '8px', alignItems: 'center' }}>
-                                      <input
-                                        type={visibleApiKeys[prov.key] ? 'text' : 'password'}
-                                        className="api-key-input no-drag"
-                                        placeholder={prov.placeholder}
-                                        value={apiKeys[prov.key]}
-                                        onChange={(e) => {
-                                          const val = e.target.value;
-                                          setApiKeys(prev => ({ ...prev, [prov.key]: val }));
-                                          // Debounce IPC send to avoid per-keystroke transmission (v1.3.0)
-                                          if (apiKeyTimers.current[prov.key]) clearTimeout(apiKeyTimers.current[prov.key]);
-                                          apiKeyTimers.current[prov.key] = setTimeout(() => {
-                                            window.electron?.ipcRenderer.send('send-to-sidecar', { action: 'update-api-keys', payload: { [prov.key]: val } });
-                                          }, 400);
-                                        }}
-                                      />
-                                      <button
-                                        className="icon-circle no-drag"
-                                        onClick={() => setVisibleApiKeys(prev => ({ ...prev, [prov.key]: !prev[prov.key] }))}
-                                        style={{ flexShrink: 0 }}
-                                        type="button"
-                                      >
-                                        {visibleApiKeys[prov.key] ? <EyeOff size={16} /> : <Eye size={16} />}
-                                      </button>
+                              ] as const).map(prov => {
+                                const currentKeyVal = apiKeys[prov.key] || settings[`${prov.key}_api_key`] || '';
+                                return (
+                                  <div key={prov.key}>
+                                    <div className="setting-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '4px' }}>
+                                      <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                                        <span>{prov.label} API Key</span>
+                                        {currentKeyVal?.trim() ? (
+                                          <span className="key-status-chip configured">
+                                            Configured {currentKeyVal.length > 4 ? `...${currentKeyVal.slice(-4)}` : currentKeyVal}
+                                          </span>
+                                        ) : (
+                                          <span className="key-status-chip not-set">Not set</span>
+                                        )}
+                                      </div>
+                                      <div style={{ display: 'flex', width: '100%', gap: '8px', alignItems: 'center' }}>
+                                        <input
+                                          type={visibleApiKeys[prov.key] ? 'text' : 'password'}
+                                          className="api-key-input no-drag"
+                                          placeholder={prov.placeholder}
+                                          value={apiKeys[prov.key]}
+                                          onChange={(e) => {
+                                            const val = e.target.value;
+                                            setApiKeys(prev => ({ ...prev, [prov.key]: val }));
+                                            // Debounce IPC send to avoid per-keystroke transmission (v1.3.0)
+                                            if (apiKeyTimers.current[prov.key]) clearTimeout(apiKeyTimers.current[prov.key]);
+                                            apiKeyTimers.current[prov.key] = setTimeout(() => {
+                                              window.electron?.ipcRenderer.send('send-to-sidecar', { action: 'update-api-keys', payload: { [prov.key]: val } });
+                                            }, 400);
+                                          }}
+                                        />
+                                        <button
+                                          className="icon-circle no-drag"
+                                          onClick={() => setVisibleApiKeys(prev => ({ ...prev, [prov.key]: !prev[prov.key] }))}
+                                          style={{ flexShrink: 0 }}
+                                          type="button"
+                                        >
+                                          {visibleApiKeys[prov.key] ? <EyeOff size={16} /> : <Eye size={16} />}
+                                        </button>
+                                      </div>
                                     </div>
+                                    {(apiKeys as any)[prov.key] && (availableModels as any)[prov.key] && (availableModels as any)[prov.key].length > 0 && (
+                                      <div className="setting-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '4px', paddingLeft: '8px', marginTop: '-4px', marginBottom: '8px' }}>
+                                        <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Model</span>
+                                        <select
+                                          className="api-model-select no-drag"
+                                          value={(modelSelections as any)[prov.key] || (modelDefaults as any)[prov.key] || ''}
+                                          onChange={(e) => {
+                                            const val = e.target.value;
+                                            setModelSelections(prev => ({ ...prev, [prov.key]: val }));
+                                            window.electron?.ipcRenderer.send('send-to-sidecar', { action: 'update-model', payload: { provider: prov.key, model: val } });
+                                          }}
+                                        >
+                                          {(availableModels as any)[prov.key].map((m: string) => (
+                                            <option key={m} value={m}>{m}</option>
+                                          ))}
+                                        </select>
+                                      </div>
+                                    )}
                                   </div>
-                                  {(apiKeys as any)[prov.key] && (availableModels as any)[prov.key] && (availableModels as any)[prov.key].length > 0 && (
-                                    <div className="setting-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '4px', paddingLeft: '8px', marginTop: '-4px', marginBottom: '8px' }}>
-                                      <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Model</span>
-                                      <select
-                                        className="api-model-select no-drag"
-                                        value={(modelSelections as any)[prov.key] || (modelDefaults as any)[prov.key] || ''}
-                                        onChange={(e) => {
-                                          const val = e.target.value;
-                                          setModelSelections(prev => ({ ...prev, [prov.key]: val }));
-                                          window.electron?.ipcRenderer.send('send-to-sidecar', { action: 'update-model', payload: { provider: prov.key, model: val } });
-                                        }}
-                                      >
-                                        {(availableModels as any)[prov.key].map((m: string) => (
-                                          <option key={m} value={m}>{m}</option>
-                                        ))}
-                                      </select>
-                                    </div>
-                                  )}
-                                </div>
-                              ))}
+                                );
+                              })}
                             </div>
                           </div>
                         </motion.div>
                       )}
                     </AnimatePresence>
+                  </div>
+
+                  <div className="settings-section" style={{ padding: '0 8px 8px 8px', marginTop: 'auto' }}>
+                    <div className="setting-card">
+                      <div
+                        className="setting-row"
+                        style={{ cursor: 'pointer' }}
+                        onClick={() => setDrawerMode('guide')}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <HelpCircle size={16} color="var(--accent-primary)" />
+                          <span>Open Guide</span>
+                        </div>
+                        <span style={{ fontSize: '12px', color: 'var(--text-dim)' }}>View tutorial</span>
+                      </div>
+                    </div>
                   </div>
                 </motion.div>
               )}
@@ -1894,6 +2001,64 @@ function App() {
                 </motion.div>
               )}
 
+              {/* First-Run Guide View (Task 4) */}
+              {drawerMode === 'guide' && (
+                <motion.div
+                  key="guide-view"
+                  initial={{ opacity: 0, x: 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -10 }}
+                  transition={{ duration: 0.2 }}
+                  className="view-content guide-drawer-view"
+                  style={{ maxHeight: '500px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '16px' }}
+                >
+                  <div className="view-header" style={{ marginBottom: '16px', width: '100%', textAlign: 'left' }}>
+                    <h2><span className="header-slash">//</span> GETTING STARTED</h2>
+                  </div>
+
+                  <img src="/logo.png" alt="Nebula Logo" style={{ width: '72px', height: '72px', marginBottom: '12px', filter: 'drop-shadow(0 0 16px var(--accent-primary))' }} />
+                  <h3 style={{ margin: '0 0 4px 0', fontSize: '18px', fontWeight: 800 }}>WELCOME TO NEBULA</h3>
+                  <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: '0 0 16px 0' }}>Real-time AI interview intelligence.</p>
+
+                  <div className="guide-grid" style={{ marginTop: '8px', marginBottom: '24px' }}>
+                    <div className="guide-item">
+                      <Terminal size={28} color="var(--accent-primary)" />
+                      <strong>STRATEGY</strong>
+                      <span style={{ fontSize: '12px', opacity: 0.7 }}>Set your context for tailored answers.</span>
+                    </div>
+                    <div className="guide-item">
+                      <Mic size={28} color="var(--accent-primary)" />
+                      <strong>LISTEN</strong>
+                      <span style={{ fontSize: '12px', opacity: 0.7 }}>Tap mic or press hotkey to start.</span>
+                    </div>
+                    <div className="guide-item">
+                      <Zap size={28} color="var(--accent-primary)" />
+                      <strong>ANSWER</strong>
+                      <span style={{ fontSize: '12px', opacity: 0.7 }}>Nebula responds in real-time.</span>
+                    </div>
+                  </div>
+
+                  <button
+                    className="btn-accent no-drag guide-got-it-btn"
+                    type="button"
+                    style={{
+                      padding: '8px 24px',
+                      fontSize: '13px',
+                      fontWeight: 700,
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      marginTop: 'auto'
+                    }}
+                    onClick={() => {
+                      updateSetting('show_guide_startup', false);
+                      setDrawerOpen(false);
+                    }}
+                  >
+                    Got it
+                  </button>
+                </motion.div>
+              )}
+
               {/* Response Stream (Answers Only v18.0) */}
               {drawerMode === 'response' && (
                 <motion.div
@@ -1905,6 +2070,52 @@ function App() {
                   className="drawer-view-mask"
                 >
                   <div className="view-content response-drawer-content">
+                    {/* Connect Your AI Empty State Card (Task 6) */}
+                    {!hasAnyKey && !aiResponse && (
+                      <div className="connect-ai-card">
+                        <div className="connect-ai-header">
+                          <Sparkles size={18} color="var(--accent-primary)" />
+                          <h4>Connect Your AI</h4>
+                        </div>
+                        <p className="connect-ai-text">
+                          Nebula answers using your own API key. It takes about 60 seconds.
+                        </p>
+                        <div className="connect-ai-buttons">
+                          <button
+                            type="button"
+                            className="connect-ai-btn no-drag"
+                            onClick={() => window.electron?.ipcRenderer.send('open-external-url', 'https://console.groq.com/keys')}
+                          >
+                            <span>Groq</span> <span className="btn-badge">Fastest · Free tier</span>
+                          </button>
+                          <button
+                            type="button"
+                            className="connect-ai-btn no-drag"
+                            onClick={() => window.electron?.ipcRenderer.send('open-external-url', 'https://aistudio.google.com/app/apikey')}
+                          >
+                            <span>Gemini</span> <span className="btn-badge">Free tier</span>
+                          </button>
+                          <button
+                            type="button"
+                            className="connect-ai-btn no-drag"
+                            onClick={() => window.electron?.ipcRenderer.send('open-external-url', 'https://platform.openai.com/api-keys')}
+                          >
+                            <span>OpenAI</span> <span className="btn-badge">Most popular</span>
+                          </button>
+                          <button
+                            type="button"
+                            className="connect-ai-btn-secondary no-drag"
+                            onClick={() => {
+                              setDrawerMode('settings');
+                              setSettingsTab('API Keys');
+                            }}
+                          >
+                            I already have a key — Open Settings
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Content Area */}
                     <div className="response-content-area">
                       {aiResponse ? (
