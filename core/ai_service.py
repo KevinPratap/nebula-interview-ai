@@ -6,7 +6,12 @@ import base64
 import requests
 import threading
 import PIL.Image
-import pytesseract
+try:
+    import pytesseract  # optional: OCR for screenshot text (needs tesseract binary on the system)
+    HAS_TESSERACT = True
+except ImportError:
+    pytesseract = None
+    HAS_TESSERACT = False
 from groq import Groq
 try:
     from anthropic import Anthropic
@@ -297,6 +302,8 @@ def run_local_ocr_fallback(image_bytes):
         import PIL.Image
         import io
         img = PIL.Image.open(io.BytesIO(image_bytes))
+        if not HAS_TESSERACT:
+            return "OCR unavailable (pytesseract/tesseract not installed)"
         extracted_text = pytesseract.image_to_string(img)
         return extracted_text.strip()
     except Exception as e:
