@@ -35,6 +35,11 @@ button, a, input, textarea, [role="button"], [contenteditable="true"], svg, .ico
 }
 
 :root {
+  --error: var(--error);
+  --error-soft: var(--error-soft);
+  --success: var(--success);
+  --success-soft: var(--success-soft);
+  --warning: var(--warning);
   /* Professional Token System - Obsidian/Slate (v18.0) */
   --font-system: 'Outfit', 'Inter', -apple-system, system-ui, sans-serif;
   --pill-radius: 6px;
@@ -158,12 +163,6 @@ body {
   /* Slate-400 equivalent */
 }
 
-.btn-locked {
-  opacity: 0.6;
-  background: rgba(40, 40, 40, 0.8) !important;
-  color: var(--text-dim) !important;
-  cursor: default;
-}
 
 .icon-circle.btn-locked {
   color: var(--text-dim) !important;
@@ -273,29 +272,24 @@ body {
   text-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
 }
 
-.btn-snapshot-active {
-  border-color: var(--accent-primary) !important;
-  color: var(--accent-primary) !important;
-  background: rgba(59, 130, 246, 0.1) !important; /* var(--accent-primary) fallback */
-}
 
 .btn-clear {
   color: rgba(255, 255, 255, 0.4);
 }
 
 .btn-clear:hover {
-  color: #ff4d4d;
+  color: var(--error);
   background: rgba(255, 77, 77, 0.1);
 }
 
 .status-indicator.pulse {
-  background: #10b981;
+  background: var(--success);
   animation: pulse-ring 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
   box-shadow: 0 0 6px rgba(16, 185, 129, 0.4);
 }
 
 .status-indicator.error {
-  background: #ef4444 !important;
+  background: var(--error) !important;
   animation: error-blink 1.2s ease-in-out infinite !important;
   box-shadow: 0 0 8px rgba(239, 68, 68, 0.5);
 }
@@ -596,11 +590,6 @@ body {
   margin-bottom: 12px;
 }
 
-.card-value {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--text-main);
-}
 
 /* --- Settings & Controls --- */
 
@@ -655,7 +644,7 @@ body {
   justify-content: center;
   transition: transform 0.15s ease-out, opacity 0.15s ease-out, background-color 0.15s ease-out, border-color 0.15s ease-out, box-shadow 0.15s ease-out;
   padding: 0;
-  border-radius: 10px;
+  border-radius: 8px;
 }
 
 .stepper-btn:hover:not(:disabled) {
@@ -807,10 +796,6 @@ body {
 
 
 
-.btn-danger:hover {
-  background: rgba(239, 68, 68, 0.2) !important;
-  border-color: rgba(239, 68, 68, 0.4) !important;
-}
 
 /* --- Auth Panel --- */
 
@@ -824,138 +809,29 @@ body {
   padding-top: 8px;
 }
 
-.auth-btn-group {
-  display: flex;
-  flex-direction: row;
-  gap: 12px;
-}
 
-.auth-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  width: 100%;
-  padding: 10px 16px;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 900;
-  letter-spacing: 0.8px;
-  cursor: default;
-  transition: transform 0.15s ease-out, opacity 0.15s ease-out, background-color 0.15s ease-out, border-color 0.15s ease-out, box-shadow 0.15s ease-out;
-  border: 1px solid transparent;
-}
 
-.auth-btn-google {
-  background: var(--accent-primary);
-  color: #fff;
-  border-color: transparent;
-}
 
-.auth-btn-google:hover {
-  transform: translateY(-1px);
-}
 
-.auth-btn-github {
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--text-secondary);
-  border-color: var(--glass-edge);
-}
 
-.auth-btn-github:hover {
-  background: rgba(255, 255, 255, 0.09);
-  border-color: rgba(255, 255, 255, 0.15);
-  transform: translateY(-1px);
-}
 
-.auth-status-bar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 20px;
-  border-radius: 16px;
-  background: rgba(167, 139, 250, 0.04);
-  border: 1px solid rgba(167, 139, 250, 0.15);
-  font-size: 12px;
-  font-weight: 800;
-  color: var(--accent-primary);
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-}
 
-.auth-status-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--accent-primary);
-  flex-shrink: 0;
-  animation: pulse-ring 2s infinite;
-}
 
 /* --- Account Panel --- */
-.account-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
 
-.account-unified-card {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01));
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 24px;
-  /* Removed nested backdrop-filter to prevent Chromium's nested backdrop rendering artifacts */
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
-  overflow: hidden;
-}
 
-.account-profile-section {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  padding: 24px;
-}
 
-.account-divider {
-  height: 1px;
-  background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.06), transparent);
-  margin: 0 24px;
-}
 
-.account-subscription-section {
-  padding: 24px;
-}
 
-.account-avatar {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 22px;
-  font-weight: 900;
-  color: #fff;
-  flex-shrink: 0;
-  letter-spacing: -0.5px;
-  box-shadow: 0 0 20px rgba(167, 139, 250, 0.2), inset 0 0 10px rgba(255, 255, 255, 0.3);
-  border: 2px solid rgba(255, 255, 255, 0.1);
-}
 
 /* --- Account Management Footer (Artisanal v1.1) --- */
-.account-management-footer {
-  display: flex;
-  background: rgba(255, 255, 255, 0.05); /* Slightly brighter base */
-  border-top: 1px solid var(--glass-edge);
-  overflow: hidden;
-}
 
 .mgmt-btn {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 12px;
   height: 48px;
   background: transparent;
   border: none;
@@ -1000,84 +876,16 @@ body {
 
 
 
-.account-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.avatar-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 50%;
-}
-
-.account-name {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 900;
-  color: var(--text-main);
-  letter-spacing: -0.2px;
-}
-
-.account-email {
-  margin: 0;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-dim);
-  opacity: 0.8;
-}
-
-.account-timer-row {
-  margin-top: 20px;
-  padding-top: 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.account-timer-value {
-  font-family: var(--font-mono);
-  font-weight: 800;
-  color: var(--accent-primary);
-  letter-spacing: 0.5px;
-}
 
 
-.account-credits-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  margin-top: 12px;
-}
 
-.account-credits-value {
-  font-size: 38px;
-  font-weight: 900;
-  color: var(--text-main);
-  letter-spacing: -1.5px;
-  line-height: 1;
-  background: linear-gradient(to bottom, #fff, #bbb);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
 
-.account-credits-label {
-  font-size: 12px;
-  font-weight: 900;
-  color: var(--accent-primary);
-  letter-spacing: 2.5px;
-  text-transform: uppercase;
-  opacity: 0.9;
-}
 
-.auth-hero-text {
-  display: flex;
-  flex-direction: column;
-}
+
+
+
+
+
 
 .credits-display {
   display: flex;
@@ -1099,7 +907,7 @@ body {
   padding: 6px 14px;
   background: linear-gradient(135deg, rgba(167, 139, 250, 0.15), rgba(124, 58, 237, 0.05));
   border: 1px solid rgba(167, 139, 250, 0.3);
-  border-radius: 10px;
+  border-radius: 8px;
   color: var(--accent-primary);
   font-weight: 900;
   letter-spacing: 0.5px;
@@ -1144,7 +952,7 @@ body {
 .btn-master {
   width: 42px !important;
   height: 42px !important;
-  border-radius: 14px !important;
+  border-radius: 12px !important;
   background: rgba(255, 255, 255, 0.1) !important;
   border: 1.5px solid var(--accent-primary) !important;
   box-shadow: 0 0 15px rgba(var(--accent-rgb), 0.3);
@@ -1174,7 +982,7 @@ body {
   border: 1px solid var(--glass-edge);
   color: var(--text-main);
   padding: 12px 16px;
-  border-radius: 14px;
+  border-radius: 12px;
   font-size: 14px;
   font-weight: 600;
   transition: transform 0.15s ease-out, opacity 0.15s ease-out, background-color 0.15s ease-out, border-color 0.15s ease-out, box-shadow 0.15s ease-out;
@@ -1193,7 +1001,7 @@ body {
 .select-field.sm {
   padding: 6px 32px 6px 12px;
   font-size: 12px;
-  border-radius: 10px;
+  border-radius: 8px;
   background-position: right 8px center;
 }
 
@@ -1317,7 +1125,7 @@ body {
 
 .response-content-area::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
+  border-radius: 8px;
 }
 
 .chat-drawer-content {
@@ -1408,7 +1216,7 @@ body {
   margin: 28px 0 12px 0;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   text-transform: uppercase;
   letter-spacing: 1px;
 }
@@ -1440,7 +1248,7 @@ body {
 
 .response-list-item {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   line-height: 1.7;
   color: #cbd5e1;
   font-weight: 400;
@@ -1528,7 +1336,7 @@ body {
 .setting-card {
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--border-glass);
-  border-radius: 16px;
+  border-radius: 12px;
   overflow: visible;
   /* CRITICAL: Allow dropdowns to show v51.15 */
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
@@ -1648,7 +1456,7 @@ body {
 .auto-strategy-badge {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   margin-top: 14px;
   padding: 10px 16px;
   border-radius: 12px;
@@ -1697,88 +1505,17 @@ body {
 }
 
 /* --- Auth Divider --- */
-.auth-divider {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  color: var(--text-dim);
-  font-size: 12px;
-  font-weight: 900;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  margin: 4px 0;
-}
 
-.auth-divider::before,
-.auth-divider::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: var(--glass-edge);
-}
 
 /* --- Email Sign-In Group --- */
-.auth-email-group {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
 
-.auth-input-row {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
 
-.auth-input-icon {
-  position: absolute;
-  left: 14px;
-  color: var(--text-dim);
-  pointer-events: none;
-  flex-shrink: 0;
-}
 
-.auth-input {
-  width: 100%;
-  padding: 12px 16px 12px 40px;
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid var(--glass-edge);
-  border-radius: 12px;
-  color: var(--text-main);
-  font-size: 13px;
-  font-weight: 600;
-  font-family: inherit;
-  transition: border-color 0.15s ease-out, background 0.15s ease-out;
-  outline: none;
-  box-sizing: border-box;
-}
 
-.auth-input:focus {
-  border-color: rgba(167, 139, 250, 0.5);
-  background: rgba(167, 139, 250, 0.04);
-}
 
-.auth-input::placeholder {
-  color: var(--text-dim);
-  font-weight: 500;
-}
 
-.auth-btn-email {
-  background: rgba(255, 255, 255, 0.07);
-  color: var(--text-main);
-  border-color: var(--glass-edge);
-}
 
-.auth-btn-email:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.2);
-  transform: translateY(-1px);
-}
 
-.auth-btn-email:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
 
 /* ============================================
    SESSION TIMER BADGE (pill)
@@ -1804,77 +1541,39 @@ body {
 .session-timer.urgent {
   background: rgba(239, 68, 68, 0.12);
   border-color: rgba(239, 68, 68, 0.35);
-  color: #f87171;
+  color: var(--error-soft);
   animation: pulse-ring 1.4s infinite;
 }
 
 /* ============================================
    LOCKED BUTTON STATE
    ============================================ */
-.btn-locked {
-  opacity: 0.45;
-  cursor: not-allowed !important;
-}
 
-.btn-locked:hover {
-  transform: none !important;
-  background: inherit !important;
-}
 
 /* ============================================
    DANGER BUTTON (sign out)
    ============================================ */
-.btn-danger {
-  background: rgba(239, 68, 68, 0.06);
-  border-color: rgba(239, 68, 68, 0.2);
-  color: #f87171;
-  width: 100%;
-  justify-content: center;
-}
 
-.btn-danger:hover {
-  background: rgba(239, 68, 68, 0.14);
-  border-color: rgba(239, 68, 68, 0.4);
-  color: #fca5a5;
-}
 
 /* ============================================
    ACCOUNT PANEL — credits & timer states
    ============================================ */
 .credits-empty {
-  color: #f87171 !important;
+  color: var(--error-soft) !important;
 }
 
 .credits-warning {
   font-size: 12px;
-  color: #f87171;
+  color: var(--error-soft);
   margin: 6px 0 0;
   font-weight: 600;
 }
 
-.account-timer-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid var(--glass-edge);
-  font-size: 12px;
-  color: var(--text-dim);
-  font-weight: 700;
-}
 
 .account-timer-row.urgent {
-  color: #f87171;
+  color: var(--error-soft);
 }
 
-.account-timer-value {
-  font-size: 15px;
-  font-weight: 900;
-  font-variant-numeric: tabular-nums;
-  font-family: 'SF Mono', 'Fira Mono', 'Cascadia Code', monospace;
-  color: var(--accent-primary);
-}
 
 /* ============================================
    CODE BLOCK & COPY BUTTON (Nebula v9.1)
@@ -1930,7 +1629,7 @@ body {
 }
 
 .copy-btn.copied {
-  background: #10b981;
+  background: var(--success);
   color: #fff;
 }
 
@@ -1953,42 +1652,17 @@ body {
 
 .code-content::-webkit-scrollbar-thumb {
   background: var(--glass-edge);
-  border-radius: 10px;
+  border-radius: 8px;
 }
 
 /* --- Auth Toggle (v51.0) --- */
-.auth-toggle {
-  display: flex;
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 8px;
-  padding: 4px;
-  margin-bottom: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-}
 
-.auth-toggle-btn {
-  flex: 1;
-  background: transparent;
-  border: none;
-  color: var(--text-dim) !important;
-  padding: 8px;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  border-radius: 6px;
-  cursor: default;
-  transition: transform 0.15s ease-out, opacity 0.15s ease-out, background-color 0.15s ease-out, border-color 0.15s ease-out, box-shadow 0.15s ease-out;
-}
 
 .auth-toggle-btn.active {
   background: var(--accent-primary) !important;
   color: white !important;
 }
 
-.auth-toggle-btn:hover:not(.active) {
-  background: rgba(255, 255, 255, 0.05);
-  color: white !important;
-}
 
 /* --- Signup Redirect (v51.1) --- */
 .signup-redirect-box {
@@ -2011,29 +1685,8 @@ body {
 }
 
 /* --- Signup Link Styling (v51.2) --- */
-.auth-signup-footer {
-  margin-top: 16px;
-  text-align: center;
-  font-size: 12px;
-  color: var(--text-dim);
-  font-weight: 500;
-}
 
-.auth-signup-link {
-  background: none;
-  border: none;
-  color: var(--accent-primary);
-  font-weight: 700;
-  cursor: default;
-  padding: 0;
-  font-size: 12px;
-  transition: opacity 0.15s ease-out;
-}
 
-.auth-signup-link:hover {
-  text-decoration: underline;
-  opacity: 0.8;
-}
 
 /* --- Manual Chat Input (Consolidated Premium) --- */
 .chat-input-wrapper {
@@ -2043,7 +1696,7 @@ body {
   padding: 10px 16px;
   background: rgba(0, 0, 0, 0.3);
   border: 1px solid var(--border-glass);
-  border-radius: 16px;
+  border-radius: 12px;
   margin: 16px 24px;
   transition: transform 0.15s ease-out, opacity 0.15s ease-out, background-color 0.15s ease-out, border-color 0.15s ease-out, box-shadow 0.15s ease-out;
   box-shadow: var(--shadow-deep);
@@ -2129,7 +1782,7 @@ body {
 
 .nebula-response-card::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.08);
-  border-radius: 10px;
+  border-radius: 8px;
   transition: background-color 0.15s ease-out;
 }
 
@@ -2236,7 +1889,7 @@ body {
 
 .premium-dropdown-list::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
+  border-radius: 8px;
 }
 
 /* --- Premium Tooltip System (v19.2 Wow) --- */
@@ -2247,7 +1900,7 @@ body {
   background: rgba(15, 15, 15, 0.85);
   backdrop-filter: blur(20px) saturate(180%);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 14px;
+  border-radius: 12px;
   box-shadow: none;
   z-index: 100000;
   pointer-events: none;
@@ -2396,7 +2049,7 @@ body {
   font-weight: 800 !important;
   text-transform: uppercase !important;
   letter-spacing: 1.5px !important;
-  border-radius: 10px !important;
+  border-radius: 8px !important;
   border: none !important;
   box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3) !important;
   cursor: default !important;
@@ -2691,56 +2344,12 @@ body {
 }
 
 /* Auth Card */
-.auth-card {
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid var(--border-glass);
-  border-radius: var(--radius-lg);
-  padding: 20px;
-  margin-bottom: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
 
-.auth-card-header {
-  border-bottom: 1px solid var(--border-glass);
-  padding-bottom: 8px;
-  margin-bottom: 8px;
-}
 
-.auth-card-header h3 {
-  font-size: 15px;
-  font-weight: 800;
-  color: var(--text-vibrant);
-  margin-bottom: 4px;
-  letter-spacing: 0.5px;
-}
 
-.auth-card-header p {
-  font-size: 12px;
-  color: var(--text-dim);
-  margin: 0;
-}
 
-.auth-card-body {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
 
-.auth-input-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
 
-.auth-label {
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 1px;
-  color: var(--text-dim);
-  text-align: left;
-}
 
 /* Chat Starter suggestions */
 .chat-starter-chips {
@@ -2751,28 +2360,8 @@ body {
   justify-content: center;
 }
 
-.chat-starter-chip {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--border-glass);
-  border-radius: 20px;
-  padding: 8px 16px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  cursor: default;
-  transition: transform 0.15s ease-out, opacity 0.15s ease-out, background-color 0.15s ease-out, border-color 0.15s ease-out, box-shadow 0.15s ease-out;
-}
 
-.chat-starter-chip:hover {
-  background: rgba(56, 189, 248, 0.1);
-  border-color: var(--accent-primary);
-  color: var(--text-vibrant);
-  transform: translateY(-1px);
-}
 
-.chat-starter-chip:active {
-  transform: translateY(0);
-}
 
 
 /* Disable drag behavior on floating-pill when Alt is pressed so scroll wheel events can register (v1.3.1) */
@@ -2819,7 +2408,7 @@ body {
 }
 
 .copy-all-btn.copied {
-  background: #10b981;
+  background: var(--success);
   color: #fff;
   border-color: transparent;
 }
@@ -2844,7 +2433,7 @@ body {
   pointer-events: auto;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   padding: 10px 18px;
   border-radius: 12px;
   background: rgba(15, 15, 15, 0.92);
@@ -2885,12 +2474,12 @@ body {
 
 .toast-icon.error {
   background: rgba(239, 68, 68, 0.2);
-  color: #ef4444;
+  color: var(--error);
 }
 
 .toast-icon.success {
   background: rgba(16, 185, 129, 0.2);
-  color: #10b981;
+  color: var(--success);
 }
 
 /* Sidecar disconnect banner */
@@ -2921,7 +2510,7 @@ body {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #ef4444;
+  background: var(--error);
   animation: pulse-ring 1.5s infinite;
   flex-shrink: 0;
 }
@@ -2970,7 +2559,7 @@ body {
 }
 
 .brand-status.error-text {
-  color: #f87171;
+  color: var(--error-soft);
   opacity: 0.9;
 }
 
@@ -3048,7 +2637,7 @@ body {
 .quit-confirm-dialog {
   background: var(--bg-drawer);
   border: 1px solid var(--glass-edge);
-  border-radius: 16px;
+  border-radius: 12px;
   padding: 32px;
   max-width: 380px;
   text-align: center;
@@ -3078,7 +2667,7 @@ body {
 
 .quit-confirm-btn {
   padding: 10px 24px;
-  border-radius: 10px;
+  border-radius: 8px;
   font-size: 12px;
   font-weight: 800;
   cursor: default;
@@ -3099,7 +2688,7 @@ body {
 .quit-confirm-btn.confirm {
   background: rgba(239, 68, 68, 0.15);
   border: 1px solid rgba(239, 68, 68, 0.3);
-  color: #f87171;
+  color: var(--error-soft);
 }
 
 .quit-confirm-btn.confirm:hover {
@@ -3111,7 +2700,7 @@ body {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background-color: var(--danger, #ef4444);
+  background-color: var(--danger, var(--error));
   flex-shrink: 0;
   animation: recording-pulse 1.2s ease-in-out infinite;
 }
@@ -3158,12 +2747,12 @@ body {
 
 .vu-bar:nth-child(3).active {
   height: 10px;
-  background: #34d399; /* Green/Healthy */
+  background: var(--success-soft); /* Green/Healthy */
 }
 
 .vu-bar:nth-child(4).active {
   height: 12px;
-  background: #fbbf24; /* Amber peak */
+  background: var(--warning); /* Amber peak */
 }
 
 .glow-subtle {
@@ -3366,7 +2955,7 @@ body {
 
 /* --- Key Status Chips & Provider Link Buttons (Task 3) --- */
 .key-status-chip {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   padding: 2px 6px;
   border-radius: 4px;
@@ -3375,7 +2964,7 @@ body {
 }
 
 .key-status-chip.configured {
-  color: #34d399;
+  color: var(--success-soft);
   background: rgba(52, 211, 153, 0.12);
   border: 1px solid rgba(52, 211, 153, 0.25);
 }
@@ -3398,7 +2987,7 @@ body {
 
 .provider-link-btn {
   padding: 2px 8px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid var(--border-color);
@@ -3485,11 +3074,11 @@ body {
 
 .connect-ai-btn:hover {
   background: rgba(255, 255, 255, 0.09);
-  border-color: var(--accent-primary, #34d399);
+  border-color: var(--accent-primary, var(--success-soft));
 }
 
 .connect-ai-btn .btn-badge {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-dim);
   font-weight: 400;
 }
@@ -3516,7 +3105,7 @@ body {
 /* --- Live Listening Status Badge (Task 7) --- */
 .status-live,
 .brand-status.status-live {
-  color: #34d399 !important;
+  color: var(--success-soft) !important;
   opacity: 1 !important;
   font-weight: 600 !important;
 }

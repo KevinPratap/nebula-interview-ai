@@ -1413,7 +1413,7 @@ function App() {
                   className="view-content"
                   style={{ maxHeight: '500px', display: 'flex', flexDirection: 'column' }}
                 >
-                  <div className="view-header" style={{ marginBottom: '16px' }}>
+                  <div className="view-header">
                     <h2><span className="header-slash">//</span> HISTORY</h2>
                   </div>
                   <div style={{ padding: '0 8px', flex: 1, overflowY: 'auto' }}>
@@ -1557,7 +1557,7 @@ function App() {
                   className="view-content"
                   style={{ maxHeight: '500px', display: 'flex', flexDirection: 'column' }}
                 >
-                  <div className="view-header" style={{ marginBottom: '16px' }}>
+                  <div className="view-header">
                     <h2><span className="header-slash">//</span> SETTINGS</h2>
                   </div>
 
@@ -2012,7 +2012,7 @@ function App() {
                   className="view-content guide-drawer-view"
                   style={{ maxHeight: '500px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '16px' }}
                 >
-                  <div className="view-header" style={{ marginBottom: '16px', width: '100%', textAlign: 'left' }}>
+                  <div className="view-header" style={{ width: '100%', textAlign: 'left' }}>
                     <h2><span className="header-slash">//</span> GETTING STARTED</h2>
                   </div>
 
