@@ -901,7 +901,7 @@ function App() {
       {/* Main Pill — always centered */}
       <motion.div
         layout
-        className="floating-pill pill-active"
+        className={`floating-pill pill-active ${drawerOpen ? 'pill-compact' : ''}`}
         initial={{ y: -50, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={springGentle}

@@ -196,11 +196,14 @@ body {
 
 .pill-content {
   width: 100%;
+  height: 48px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 0 10px;
   z-index: 2;
+  gap: 8px;
+  overflow: hidden;
 }
 
 .pill-left,
@@ -209,6 +212,26 @@ body {
   align-items: center;
   gap: 8px;
   /* Compacted v1.1.48 */
+}
+
+/* Drawer open: compact the pill so buttons never spill past the pill edge */
+.pill-compact .pill-content {
+  padding: 0 6px;
+  gap: 6px;
+}
+.pill-compact .brand-status {
+  max-width: 200px;
+}
+.pill-compact .pill-right {
+  gap: 4px;
+}
+.pill-compact .icon-circle {
+  width: 34px;
+  height: 34px;
+}
+.pill-compact .btn-master {
+  width: 36px !important;
+  height: 36px !important;
 }
 
 .brand-title {
@@ -2551,6 +2574,10 @@ body {
   color: var(--text-dim);
   opacity: 0.6;
   font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 320px;
   font-size: 12px;
   min-width: 120px;
   display: inline-block;
@@ -2829,6 +2856,7 @@ body {
   gap: var(--space-2);
   max-height: 480px;
   overflow-y: auto;
+  min-height: 0;
   padding-right: 4px;
 }
 
