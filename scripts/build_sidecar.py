@@ -27,6 +27,9 @@ def main():
         "--distpath", RESOURCES_DIR,
         "--workpath", BUILD_DIR,
         "--specpath", SPEC_DIR,
+        "--exclude-module", "PyQt5",
+        "--exclude-module", "PyQt6",
+        "--exclude-module", "tkinter",
         f"--add-data={core_dir}{data_sep}core",
     ]
 
