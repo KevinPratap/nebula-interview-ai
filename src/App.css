@@ -3105,3 +3105,25 @@ body {
 .quit-confirm-btn.confirm:hover {
   background: rgba(239, 68, 68, 0.25);
 }
+
+/* Recording indicator dot */
+.recording-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--danger, #ef4444);
+  flex-shrink: 0;
+  animation: recording-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes recording-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .recording-dot {
+    animation: none;
+    opacity: 1;
+  }
+}

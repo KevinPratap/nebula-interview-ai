@@ -195,7 +195,7 @@ function App() {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [drawerMode, setDrawerMode] = useState<DrawerMode>('response')
   const [isLive, setIsLive] = useState(false)
-  const [status, setStatus] = useState("v1.2.1 OSS")
+  const [status, setStatus] = useState("v1.3.0 OSS")
   const [isError, setIsError] = useState(false)
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [platform, setPlatform] = useState<string>('win32')
@@ -812,6 +812,9 @@ function App() {
               </button>
             </Tooltip>
             <div className={`status-indicator ${isError ? 'error' : (isLive ? 'pulse' : '')}`} />
+            {isLive && !settings.stealth_mode && (
+              <span className="recording-dot" />
+            )}
             <div className="brand-title">
               NEBULA <span className={`brand-status ${isError ? 'error-text' : ''}`}>// {status}</span>
             </div>
@@ -1067,7 +1070,7 @@ function App() {
                       Nebula Interview AI — Open Source Edition
                     </p>
                     <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '16px' }}>
-                      v1.2.1
+                      v1.3.0
                     </p>
                     <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '16px' }}>
                       MIT License
@@ -1540,7 +1543,7 @@ function App() {
                               <div className="setting-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '4px' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
                                   <span>Software Version</span>
-                                  <span style={{ fontSize: '12px', color: 'var(--text-dim)' }}>v1.2.1 OSS</span>
+                                  <span style={{ fontSize: '12px', color: 'var(--text-dim)' }}>v1.3.0 OSS</span>
                                 </div>
                                 <p style={{ fontSize: '12px', color: 'var(--text-dim)', margin: '4px 0 0 0' }}>
                                   Open-source build — updates via GitHub releases.

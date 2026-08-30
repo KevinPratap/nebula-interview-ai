@@ -287,7 +287,7 @@ class AudioService:
                     sys.stderr.write(f"DEBUG: Frame limit reached. Transcribing {len(frames)} frames...\n")
                     sys.stderr.flush()
                     self._transcribe(frames, current_rate)
-                    frames = []
+                    frames = frames[-2:]  # Keep last 2 frames as overlap to prevent word boundary cuts
             except: continue
 
     def _transcribe(self, frames, rate):

@@ -6,7 +6,7 @@
 
 <p align="center">
   <b>Real-time AI interview copilot that listens, transcribes, and helps you answer.</b><br>
-  100% offline · Open Source · No subscription · Your own API keys
+  No cloud gate · Open Source · No subscription · Your own API keys
 </p>
 
 <p align="center">
@@ -68,6 +68,16 @@ Or set them **inside the app** via **Settings > API Keys** with show/hide toggle
 
 ---
 
+## 🧪 Tests
+
+Smoke tests cover SettingsManager persistence, key normalization, TranscriptManager UTF-8 and single-file guarantees, and the junk transcript filter. No pytest or third-party deps required.
+
+```bash
+python3 tests/run_smoke_tests.py
+```
+
+---
+
 ## 🧠 AI Providers
 
 Nebula auto-falls through providers if one fails:
@@ -90,7 +100,7 @@ You can **select which model** to use for each provider directly from the settin
 | Feature | Status |
 |---------|--------|
 | 🎙️ Real-time audio transcription (Whisper) | ✅ |
-| 🤖 AI answer generation (6 providers) | ✅ |
+| 🤖 AI answer generation (6 providers, automatic fallback, 15s timeouts) | ✅ |
 | 🖥️ Screen analysis for coding problems | ✅ |
 | 📄 Resume parsing + job context | ✅ |
 | 🔑 In-app API key management | ✅ |
@@ -99,7 +109,10 @@ You can **select which model** to use for each provider directly from the settin
 | 🔇 Stealth mode (screen protection) | ✅ |
 | ⌨️ Fully customizable hotkeys | ✅ |
 | 🌙 Dark/Light theme | ✅ |
-| 💾 Local transcript saving | ✅ |
+| 💾 Meeting notes generation with AI summary | ✅ |
+| 📝 Local transcript saving | ✅ |
+| 🔄 Updates via GitHub Releases (no auto-updater) | ✅ |
+
 
 ---
 

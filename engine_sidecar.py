@@ -29,6 +29,7 @@ from core.ai_service import AIService, PROVIDER_MODEL_LISTS, PROVIDER_DEFAULT_MO
 from core.settings_manager import SettingsManager
 from core.transcript_manager import TranscriptManager
 from core.utils import log_debug
+from core.transcript_filter import is_junk
 
 log_debug("Sidecar Starting...")
 
@@ -125,23 +126,8 @@ class SidecarEngine:
             return
 
         text_clean = text.strip()
-        text_lower = text_clean.lower()
 
-        # Discard empty/tiny noise
-        if len(text_clean) < 2:
-            return
-
-        # Discard standard subtitle annotation tags (e.g. [music], (applause), [silence])
-        if re.match(r'^[\[\(]\s*(?:music|applause|laughter|noise|silence|audio|cheering|chuckle|gasp|sigh|groan|cough|throat clearing)\s*[\]\)]$', text_lower):
-            return
-
-        # Discard hallucinated YouTube / video subtitle credit phrases (only when fragment is short)
-        junk_phrases = [
-            "thank you for watching", "thanks for watching", "please subscribe", 
-            "subscribe to our channel", "transcribed by", "all rights reserved", 
-            "english subtitle", "subtitles by", "subbed by", "ensure on-demand"
-        ]
-        if any(p in text_lower for p in junk_phrases) and len(text_clean) < 60:
+        if is_junk(text_clean):
             return
 
         sys.stderr.write(f"DEBUG: Heard fragment: \"{text}\"\n")
@@ -279,9 +265,31 @@ class SidecarEngine:
         self.send_to_electron("status", {"msg": "Nebula Ready"})
 
     def stream_volume(self):
+        _silent_ticks = 0
+        _silent_notified = False
         while True:
-            vol = getattr(self.audio, 'current_volume', 0) if self.audio.is_listening else 0
+            is_listening = self.audio.is_listening
+            vol = getattr(self.audio, 'current_volume', 0) if is_listening else 0
             self.send_to_electron("volume", {"level": vol})
+            # Silent-audio detection: 5s with no audio while listening
+            if is_listening:
+                if vol == 0:
+                    _silent_ticks += 1
+                    if _silent_ticks >= 25 and not _silent_notified:  # 25 * 0.2s = 5s
+                        self.send_to_electron("status", {
+                            "msg": "Listening, but no audio detected. Check your input device (Stereo Mix / loopback).",
+                            "is_error": True
+                        })
+                        _silent_notified = True
+                else:
+                    if _silent_notified:
+                        # Audio resumed — clear the warning with a normal status
+                        self.send_to_electron("status", {"msg": "Nebula Ready"})
+                    _silent_ticks = 0
+                    _silent_notified = False
+            else:
+                _silent_ticks = 0
+                _silent_notified = False
             time.sleep(0.2)
 
     def handle_command(self, cmd):
@@ -367,7 +375,8 @@ class SidecarEngine:
         elif action == "generate-meeting-notes":
             title = payload or ""
             groq_key = self.ai.groq_key
-            result = self.transcript.generate_meeting_notes(groq_key=groq_key, title=title)
+            existing_path = self.transcript.end_session() or ""
+            result = self.transcript.generate_meeting_notes(groq_key=groq_key, title=title, existing_path=existing_path)
             if "error" in result and result["error"]:
                 self.send_to_electron("error", {"msg": f"Notes generation: {result['error']}"})
             else:
@@ -626,11 +635,15 @@ class SidecarEngine:
                 return
 
             try:
-                ip_str = socket.gethostbyname(hostname)
-                ip = ipaddress.ip_address(ip_str)
-                if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
-                    self.send_to_electron("error", {"msg": "Access to local/private network addresses is blocked"})
-                    return
+                results = socket.getaddrinfo(hostname, None)
+                for res in results:
+                    ip = ipaddress.ip_address(res[4][0])
+                    if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved or ip.is_multicast:
+                        self.send_to_electron("error", {"msg": "URL blocked: internal or unsupported address"})
+                        return
+            except socket.gaierror:
+                self.send_to_electron("error", {"msg": "URL blocked: could not resolve hostname"})
+                return
             except Exception:
                 pass
 

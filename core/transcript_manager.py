@@ -167,16 +167,19 @@ class TranscriptManager:
                     continue
         return files
 
-    def generate_meeting_notes(self, groq_key: str = "", title: str = "") -> dict:
+    def generate_meeting_notes(self, groq_key: str = "", title: str = "", existing_path: str = "") -> dict:
         """
         Save the transcript and generate AI-structured meeting notes.
         Returns dict with {path, summary, error} or {error: ...}.
         
-        The AI summary includes: key topics, decisions, action items.
+        Pass existing_path to skip the internal save and use that file directly.
         Falls back to markdown-only if no Groq key available.
         """
-        # 1. Save raw transcript
-        path = self.save_session(title)
+        # 1. Save raw transcript (skip if path already provided by caller)
+        if existing_path:
+            path = existing_path
+        else:
+            path = self.save_session(title)
         if not path:
             return {"error": "No transcript to save"}
 
