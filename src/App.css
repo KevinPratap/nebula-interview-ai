@@ -408,6 +408,12 @@ body {
   overflow-y: auto !important;
   overflow-anchor: auto;
 }
+
+/* Flexbox shrink guard: every direct child must be allowed to shrink,
+   otherwise tall content spills past the drawer instead of scrolling. */
+.view-content > div {
+  min-height: 0;
+}
 .drawer-view-mask {
   position: relative;
   overflow: hidden !important;
@@ -1384,6 +1390,8 @@ body {
 /* --- Scrollbar Polish --- */
 .scroll-y {
   overflow-y: auto;
+  min-height: 0;   /* flex child must be allowed to shrink or content spills past the drawer */
+  flex: 1 1 0%;
   padding-right: 12px;
 }
 
