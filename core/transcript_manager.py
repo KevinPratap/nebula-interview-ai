@@ -46,7 +46,11 @@ class TranscriptManager:
 
     def __init__(self, notes_dir: str = ""):
         if not notes_dir:
-            notes_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "meeting_notes")
+            user_data = os.environ.get("NEBULA_USER_DATA", "")
+            if user_data:
+                notes_dir = os.path.join(user_data, "meeting_notes")
+            else:
+                notes_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "meeting_notes")
         self.notes_dir = notes_dir
         self.entries: list[TranscriptEntry] = []
         self.start_time: float = 0.0

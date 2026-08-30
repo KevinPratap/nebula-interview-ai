@@ -1,6 +1,5 @@
 const electron = require('electron');
 const { app, BrowserWindow, ipcMain, globalShortcut, Menu, Tray, nativeImage, dialog, screen } = electron;
-const { autoUpdater } = require('electron-updater');
 const { join, dirname } = require('path');
 const { spawn } = require('child_process');
 const { readFileSync, writeFileSync, appendFileSync, existsSync } = require('fs');
@@ -171,7 +170,6 @@ function createWindow() {
         console.log("Main: Initializing global shortcuts...");
         registerShortcuts();
     }, 5000);
-    setupAutoUpdater(); // One-time setup v1.1.1
     startSidecar();
 }
 
@@ -209,18 +207,6 @@ function registerShortcuts(config = {}) {
     logToFile(`Main: registerShortcuts called with ${JSON.stringify(config)}`);
     globalShortcut.unregisterAll();
     logToFile("Main: [DEBUG] All shortcuts unregistered.");
-
-    // Test Key: See if ANYTHING can register
-    try {
-        const testKey = 'Control+Shift+K';
-        const testSuccess = globalShortcut.register(testKey, () => {
-            logToFile("Main: [HOTKEY EVENT] Control+Shift+K -> TEST SUCCESS");
-            mainWindow?.webContents.send('status-received', { msg: "TEST KEY FIRED", is_error: false });
-        });
-        logToFile(`Main: [DEBUG] Test Key (${testKey}) Registration -> ${testSuccess}`);
-    } catch (e) {
-        logToFile(`Main: [DEBUG] Test Key Exception: ${e.message}`);
-    }
 
     const keys = {
         activation: config.hotkey || 'F2',
@@ -350,55 +336,6 @@ function registerShortcuts(config = {}) {
 
     // Report back to UI
     mainWindow?.webContents.send('registration-report', registrationStats);
-}
-
-function setupAutoUpdater() {
-    // --- Auto-Update Lifecycle (v51.35) ---
-    autoUpdater.autoDownload = false;
-
-    autoUpdater.on('checking-for-update', () => {
-        mainWindow?.webContents.send('update-status', 'Checking for update...');
-    });
-
-    autoUpdater.on('update-available', (info) => {
-        mainWindow?.webContents.send('update-status', 'Update available!');
-        mainWindow?.webContents.send('update-available', info);
-    });
-
-    autoUpdater.on('update-not-available', (info) => {
-        mainWindow?.webContents.send('update-status', 'Up to date.');
-    });
-
-    autoUpdater.on('error', (err) => {
-        mainWindow?.webContents.send('update-status', `Error: ${err.message}`);
-    });
-
-    autoUpdater.on('download-progress', (progressObj) => {
-        mainWindow?.webContents.send('update-status', `Downloading: ${Math.round(progressObj.percent)}%`);
-    });
-
-    autoUpdater.on('update-downloaded', (info) => {
-        mainWindow?.webContents.send('update-status', 'Update downloaded');
-        mainWindow?.webContents.send('update-ready');
-    });
-
-    // --- IPC Handlers for Updates (Single Registration v1.1.1) ---
-    ipcMain.handle('check-for-updates', async () => {
-        return autoUpdater.checkForUpdates();
-    });
-
-    ipcMain.handle('download-update', async () => {
-        return autoUpdater.downloadUpdate();
-    });
-
-    ipcMain.on('quit-and-install', () => {
-        autoUpdater.quitAndInstall();
-    });
-
-    // Check for updates on startup
-    setTimeout(() => {
-        autoUpdater.checkForUpdatesAndNotify();
-    }, 5000);
 }
 
 function repositionWindow(zone) {

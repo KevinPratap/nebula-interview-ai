@@ -14,7 +14,6 @@
     "package": "npm run build && electron-packager . \"Nebula Assistant\" --platform=win32 --arch=x64 --out=dist_electron --overwrite --icon=public/logo.ico --extra-resource=resources/engine_sidecar.exe --ignore=\"^/(src|build|dist_electron|.git|.venv|tsconfig.*|vite.config.ts|eslint.config.js|.gitignore|README.md)\" --prune=true --asar"
   },
   "dependencies": {
-    "electron-updater": "^6.8.3",
     "framer-motion": "^12.34.3",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
@@ -77,12 +76,6 @@
       "installerSidebar": "build/installer_banner.png",
       "uninstallerSidebar": "build/installer_banner.png",
       "runAfterFinish": true
-    },
-    "publish": [
-      {
-        "provider": "generic",
-        "url": "https://www.nebulainterviewai.com/updates/"
-      }
-    ]
+    }
   }
 }

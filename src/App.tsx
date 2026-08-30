@@ -56,9 +56,18 @@ interface StarContent {
 
 function parseStarResponse(text: string): StarContent {
   const getTag = (tag: string) => {
-    const regex = new RegExp(`<${tag}>([\\s\\S]*?)(?:</${tag}>|$)`, 'i');
-    const match = text.match(regex);
-    return match ? match[1].trim() : '';
+    if (!text) return '';
+    const startTag = `<${tag}>`;
+    const endTag = `</${tag}>`;
+    const lowerText = text.toLowerCase();
+    const startIdx = lowerText.indexOf(startTag.toLowerCase());
+    if (startIdx === -1) return '';
+    const contentStart = startIdx + startTag.length;
+    const endIdx = lowerText.indexOf(endTag.toLowerCase(), contentStart);
+    if (endIdx === -1) {
+      return text.substring(contentStart).trim();
+    }
+    return text.substring(contentStart, endIdx).trim();
   };
   return {
     situation: getTag('situation'),
@@ -201,9 +210,6 @@ function App() {
   const [audioDevices, setAudioDevices] = useState<{ id: string, name: string }[]>([])
   const [outputDevices, setOutputDevices] = useState<{ id: string, name: string }[]>([])
   const [isThinking, setIsThinking] = useState(false)
-  const [updateStatus, setUpdateStatus] = useState<string | null>(null)
-  const [updateInfo, setUpdateInfo] = useState<any>(null)
-  const [updateReady, setUpdateReady] = useState(false)
   const [liveTranscript, setLiveTranscript] = useState("")
   const liveTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const [linkedFilesCount, setLinkedFilesCount] = useState(0)
@@ -548,37 +554,30 @@ function App() {
       setSettings((prev: any) => ({ ...prev, stealth_mode: enabled }));
     }));
 
-    // --- Update Callbacks (v51.35) ---
-    subs.push(window.electron?.ipcRenderer.on('update-status', (msg: string) => {
-      console.log("UI: Update Status:", msg);
-      setUpdateStatus(msg);
-    }));
-
-    subs.push(window.electron?.ipcRenderer.on('update-available', (info: any) => {
-      setUpdateInfo(info);
-    }));
-
-    subs.push(window.electron?.ipcRenderer.on('update-ready', () => {
-      setUpdateReady(true);
-      setUpdateStatus("RESTART REQUIRED");
-    }));
-
     // Meeting Notes IPC listeners
-    subs.push(window.electron?.ipcRenderer.on('session-status', (s: any) => {
+    const handleSessionStatus = (s: any) => {
       console.log("UI: Session status:", s);
       setSessionStatus(s);
-    }));
-    subs.push(window.electron?.ipcRenderer.on('saved-notes', (notes: any[]) => {
+    };
+    subs.push(window.electron?.ipcRenderer.on('session-status-received', handleSessionStatus));
+    subs.push(window.electron?.ipcRenderer.on('session-status', handleSessionStatus));
+
+    const handleSavedNotes = (notes: any[]) => {
       console.log("UI: Saved notes:", notes?.length || 0);
       setSavedNotes(notes || []);
-    }));
-    subs.push(window.electron?.ipcRenderer.on('notes-ready', (result: any) => {
+    };
+    subs.push(window.electron?.ipcRenderer.on('saved-notes-received', handleSavedNotes));
+    subs.push(window.electron?.ipcRenderer.on('saved-notes', handleSavedNotes));
+
+    const handleNotesReady = (result: any) => {
       console.log("UI: Meeting notes ready:", result);
       if (result?.path) {
         setStatus(`Notes saved: ${result.path.split(/[/\\]/).pop()}`);
       }
       window.electron?.ipcRenderer.send('send-to-sidecar', { action: 'get-saved-notes' });
-    }));
+    };
+    subs.push(window.electron?.ipcRenderer.on('notes-ready-received', handleNotesReady));
+    subs.push(window.electron?.ipcRenderer.on('notes-ready', handleNotesReady));
 
     subs.push(window.electron?.ipcRenderer.on('hotkey-action', (action: string) => {
       console.log(`UI: [IPC] hotkey-action received: ${action}`);
@@ -1199,13 +1198,13 @@ function App() {
                             setDrawerMode('response');
                           }}
                         >
-                          <div style={{ fontSize: '11px', fontWeight: 600, marginBottom: '4px', color: 'var(--accent-primary)' }}>
+                          <div style={{ fontSize: '12px', fontWeight: 600, marginBottom: '4px', color: 'var(--accent-primary)' }}>
                             Q: {item.q.length > 80 ? item.q.slice(0, 80) + '...' : item.q}
                           </div>
-                          <div style={{ fontSize: '11px', color: 'var(--text-secondary)', opacity: 0.8 }}>
+                          <div style={{ fontSize: '12px', color: 'var(--text-secondary)', opacity: 0.8 }}>
                             {item.a.length > 120 ? item.a.slice(0, 120) + '...' : item.a}
                           </div>
-                          <div style={{ fontSize: '10px', color: 'var(--text-secondary)', opacity: 0.5, marginTop: '4px' }}>
+                          <div style={{ fontSize: '12px', color: 'var(--text-secondary)', opacity: 0.5, marginTop: '4px' }}>
                             {item.strategy} · {new Date(item.id).toLocaleTimeString()}
                           </div>
                         </div>
@@ -1297,12 +1296,12 @@ function App() {
                                 <span style={{ fontSize: '12px', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                   {note.filename}
                                 </span>
-                                <span style={{ fontSize: '10px', color: 'var(--text-dim)' }}>
+                                <span style={{ fontSize: '12px', color: 'var(--text-dim)' }}>
                                   {new Date(note.modified).toLocaleString()} · {(note.size / 1024).toFixed(1)}KB
                                 </span>
                               </div>
                               {(note.filename.includes('summary') || note.filename.includes('enhanced')) && (
-                                <span style={{ fontSize: '10px', color: 'var(--accent-primary)', marginLeft: '8px' }}>AI</span>
+                                <span style={{ fontSize: '12px', color: 'var(--accent-primary)', marginLeft: '8px' }}>AI</span>
                               )}
                             </div>
                           ))
@@ -1381,7 +1380,7 @@ function App() {
                             <div className="setting-card">
                               <div className="setting-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '8px' }}>
                                 <span>Listen From</span>
-                                <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: '0 0 4px 0', fontWeight: 600 }}>Select the device Nebula should listen to.</p>
+                                <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '0 0 4px 0', fontWeight: 600 }}>Select the device Nebula should listen to.</p>
                                 <PremiumDropdown
                                   options={audioDevices}
                                   value={settings.audio_device_id}
@@ -1536,48 +1535,16 @@ function App() {
                           transition={{ duration: 0.15 }}
                         >
                           <div className="settings-section">
-                            <h3>UPDATE CENTER</h3>
+                            <h3>VERSION</h3>
                             <div className="setting-card">
                               <div className="setting-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '4px' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
                                   <span>Software Version</span>
-                                  <span style={{ fontSize: '12px', color: 'var(--text-dim)' }}>v1.2.0</span>
+                                  <span style={{ fontSize: '12px', color: 'var(--text-dim)' }}>v1.2.1 OSS</span>
                                 </div>
-                                {updateStatus && (
-                                  <p style={{ fontSize: '11px', color: 'var(--accent-primary)', margin: '4px 0 0 0', fontWeight: 700 }}>
-                                    {updateStatus}
-                                  </p>
-                                )}
-                                {updateInfo && !updateReady && (
-                                  <div style={{ marginTop: '8px', width: '100%' }}>
-                                    <button
-                                      className="btn-premium btn-accent full-width no-drag"
-                                      onClick={() => window.electron?.ipcRenderer.invoke('download-update')}
-                                    >
-                                      START DOWNLOAD (v{updateInfo.version})
-                                    </button>
-                                  </div>
-                                )}
-                                {updateReady && (
-                                  <div style={{ marginTop: '8px', width: '100%' }}>
-                                    <button
-                                      className="btn-premium btn-accent full-width no-drag"
-                                      onClick={() => window.electron?.ipcRenderer.send('quit-and-install')}
-                                    >
-                                      RESTART & INSTALL
-                                    </button>
-                                  </div>
-                                )}
-                                {!updateInfo && !updateReady && (
-                                  <div style={{ marginTop: '8px', width: '100%' }}>
-                                    <button
-                                      className="btn-premium full-width no-drag"
-                                      onClick={() => window.electron?.ipcRenderer.invoke('check-for-updates')}
-                                    >
-                                      CHECK FOR UPDATES
-                                    </button>
-                                  </div>
-                                )}
+                                <p style={{ fontSize: '12px', color: 'var(--text-dim)', margin: '4px 0 0 0' }}>
+                                  Open-source build — updates via GitHub releases.
+                                </p>
                               </div>
                             </div>
                           </div>
@@ -1634,7 +1601,7 @@ function App() {
                                   </div>
                                   {(apiKeys as any)[prov.key] && (availableModels as any)[prov.key] && (availableModels as any)[prov.key].length > 0 && (
                                     <div className="setting-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '4px', paddingLeft: '8px', marginTop: '-4px', marginBottom: '8px' }}>
-                                      <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Model</span>
+                                      <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Model</span>
                                       <select
                                         className="api-model-select no-drag"
                                         value={(modelSelections as any)[prov.key] || (modelDefaults as any)[prov.key] || ''}

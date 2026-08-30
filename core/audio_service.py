@@ -68,14 +68,18 @@ class AudioService:
 
     def stop(self):
         self.is_listening = False
-        if self._thread:
+        if hasattr(self, '_record_thread') and self._record_thread and self._record_thread.is_alive():
+            self._record_thread.join(timeout=1.0)
+        if self._thread and self._thread.is_alive():
             self._thread.join(timeout=1.0)
 
     def _run(self):
-        record_thread = threading.Thread(target=self._record_loop, daemon=True)
-        record_thread.start()
+        self._record_thread = threading.Thread(target=self._record_loop, daemon=True)
+        self._record_thread.start()
         self._process_loop()
         self.is_listening = False
+        if self._record_thread and self._record_thread.is_alive():
+            self._record_thread.join(timeout=1.0)
 
     def _get_best_loopback_device(self):
         """Locates the loopback/stereo mix device or uses the manually selected one.

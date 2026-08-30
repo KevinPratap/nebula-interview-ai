@@ -124,8 +124,25 @@ class SidecarEngine:
             self.send_to_electron("status", {"msg": text.replace("@SYSTEM: ", "")})
             return
 
-        junk = ["[", "(", "music", "noise", "silence", "thank you", "thanks", "watching", "youtube", "subscribe", "subscribing", "transcribed by", "copyright", "all rights reserved", "english sub", "subtitle", "subbed by", "ensure on-demand"]
-        if any(m in text.lower() for m in junk) and len(text) < 50: return
+        text_clean = text.strip()
+        text_lower = text_clean.lower()
+
+        # Discard empty/tiny noise
+        if len(text_clean) < 2:
+            return
+
+        # Discard standard subtitle annotation tags (e.g. [music], (applause), [silence])
+        if re.match(r'^[\[\(]\s*(?:music|applause|laughter|noise|silence|audio|cheering|chuckle|gasp|sigh|groan|cough|throat clearing)\s*[\]\)]$', text_lower):
+            return
+
+        # Discard hallucinated YouTube / video subtitle credit phrases (only when fragment is short)
+        junk_phrases = [
+            "thank you for watching", "thanks for watching", "please subscribe", 
+            "subscribe to our channel", "transcribed by", "all rights reserved", 
+            "english subtitle", "subtitles by", "subbed by", "ensure on-demand"
+        ]
+        if any(p in text_lower for p in junk_phrases) and len(text_clean) < 60:
+            return
 
         sys.stderr.write(f"DEBUG: Heard fragment: \"{text}\"\n")
         sys.stderr.flush()
@@ -267,14 +284,6 @@ class SidecarEngine:
             self.send_to_electron("volume", {"level": vol})
             time.sleep(0.2)
 
-    def listen_for_commands(self):
-        while True:
-            try:
-                line = sys.stdin.readline()
-                if not line: break
-                self.handle_command(json.loads(line))
-            except: pass
-
     def handle_command(self, cmd):
         threading.Thread(target=self._handle_command_impl, args=(cmd,), daemon=True).start()
 
@@ -296,22 +305,24 @@ class SidecarEngine:
                 sys.stderr.write(f"DEBUG: Interview Context updated ({len(payload)} chars)\n")
             else:
                 sys.stderr.write("DEBUG: Ignored empty context update\n")
-                sys.stderr.write("DEBUG: Ignored empty context update (keep existing)\n")
             sys.stderr.flush()
 
         elif action == "parse-file":
             path = payload
-            filename = os.path.basename(path)
-            text = self._extract_text_from_file(path)
-            if text:
-                self.linked_files[filename] = text
-                # Aggregate all linked files into one context
-                all_text = "\n\n".join(self.linked_files.values())
-                self.ai.resume_context = all_text
-                self.send_to_electron("resume-parsed", {"text": all_text})
-                self.send_to_electron("context-count", {"count": len(self.linked_files)})
+            if path and os.path.isfile(path):
+                filename = os.path.basename(path)
+                text = self._extract_text_from_file(path)
+                if text:
+                    self.linked_files[filename] = text
+                    # Aggregate all linked files into one context
+                    all_text = "\n\n".join(self.linked_files.values())
+                    self.ai.resume_context = all_text
+                    self.send_to_electron("resume-parsed", {"text": all_text})
+                    self.send_to_electron("context-count", {"count": len(self.linked_files)})
+                else:
+                    self.send_to_electron("error", {"msg": "Failed to parse file format or unsupported extension"})
             else:
-                self.send_to_electron("error", {"msg": "Failed to parse file format"})
+                self.send_to_electron("error", {"msg": "Invalid file path"})
 
         elif action == "get-context-count":
             self.send_to_electron("context-count", {"count": len(self.linked_files)})
@@ -355,10 +366,6 @@ class SidecarEngine:
 
         elif action == "generate-meeting-notes":
             title = payload or ""
-            path = self.transcript.end_session()
-            if not path:
-                self.send_to_electron("error", {"msg": "No transcript to process"})
-                return
             groq_key = self.ai.groq_key
             result = self.transcript.generate_meeting_notes(groq_key=groq_key, title=title)
             if "error" in result and result["error"]:
@@ -366,6 +373,7 @@ class SidecarEngine:
             else:
                 self.send_to_electron("status", {"msg": "Meeting notes ready"})
                 self.send_to_electron("notes-ready", result)
+                self.send_to_electron("session-status", self.transcript.get_stats())
 
         elif action == "get-session-status":
             self.send_to_electron("session-status", self.transcript.get_stats())
@@ -380,7 +388,15 @@ class SidecarEngine:
             self.send_to_electron("session-status", self.transcript.get_stats())
 
         elif action == "get-settings":
-            self.send_to_electron("settings-data", self.settings.settings)
+            safe_settings = dict(self.settings.settings)
+            for k in list(safe_settings.keys()):
+                if "key" in k.lower() or "secret" in k.lower():
+                    val = str(safe_settings[k])
+                    if val and len(val) > 8:
+                        safe_settings[k] = f"{val[:4]}...{val[-4:]}"
+                    elif val:
+                        safe_settings[k] = "********"
+            self.send_to_electron("settings-data", safe_settings)
 
         elif action == "get-available-models":
             self.send_to_electron("available-models", {
@@ -401,6 +417,19 @@ class SidecarEngine:
             self.settings.set(key, val)
             if key == "expert_mode":
                 self.ai.set_expert_mode(val)
+            elif key in ("groq_api_key", "groq_key"):
+                self.ai.groq_key = val
+                self.audio.groq_key = val
+            elif key in ("gemini_api_key", "gemini_key"):
+                self.ai.gemini_key = val
+            elif key == "openai_api_key":
+                self.ai.openai_key = val
+            elif key == "anthropic_api_key":
+                self.ai.anthropic_key = val
+            elif key == "deepseek_api_key":
+                self.ai.deepseek_key = val
+            elif key == "openrouter_api_key":
+                self.ai.openrouter_key = val
             elif key == "audio_device_id":
                 sys.stderr.write(f"DEBUG: Switching audio device to {val}\n")
                 sys.stderr.flush()
@@ -535,13 +564,19 @@ class SidecarEngine:
             log_debug(f"Unknown action: {action}")
 
     def _extract_text_from_file(self, path):
+        if not path or not os.path.isfile(path):
+            return None
         sys.stderr.write(f"DEBUG: Extracting text from: {path}\n")
         sys.stderr.flush()
         try:
+            allowed_exts = ['.txt', '.pdf', '.doc', '.docx', '.md', '.rtf']
             ext = os.path.splitext(path)[1].lower()
+            if ext not in allowed_exts:
+                sys.stderr.write(f"DEBUG: Unsupported file extension: {ext}\n")
+                return None
             sys.stderr.write(f"DEBUG: Extension detected: {ext}\n")
             sys.stderr.flush()
-            if ext == '.txt':
+            if ext in ('.txt', '.md', '.rtf'):
                 with open(path, 'r', encoding='utf-8', errors='ignore') as f:
                     return f.read()
             elif ext == '.pdf':
@@ -576,7 +611,29 @@ class SidecarEngine:
 
     def _scrape_url(self, url):
         try:
-            import re
+            import urllib.parse
+            import ipaddress
+            import socket
+            
+            parsed = urllib.parse.urlparse(url)
+            if parsed.scheme not in ('http', 'https'):
+                self.send_to_electron("error", {"msg": "Invalid URL scheme (only http/https allowed)"})
+                return
+            
+            hostname = parsed.hostname
+            if not hostname:
+                self.send_to_electron("error", {"msg": "Invalid URL host"})
+                return
+
+            try:
+                ip_str = socket.gethostbyname(hostname)
+                ip = ipaddress.ip_address(ip_str)
+                if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
+                    self.send_to_electron("error", {"msg": "Access to local/private network addresses is blocked"})
+                    return
+            except Exception:
+                pass
+
             resp = requests.get(url, timeout=10, headers={'User-Agent': 'Mozilla/5.0'})
             if resp.status_code == 200:
                 # Remove script/style tags
@@ -606,6 +663,8 @@ class SidecarEngine:
             img_bytes = self._grab_screen_robust(display_info)
             if img_bytes:
                 self.vision_buffer.append(img_bytes)
+                if len(self.vision_buffer) > 10:
+                    self.vision_buffer = self.vision_buffer[-10:]
                 sys.stderr.write(f"DEBUG: Snapshot appended. Total Context: {len(self.vision_buffer)}\n")
             
             if not self.vision_buffer:
@@ -634,6 +693,8 @@ class SidecarEngine:
             img_bytes = self._grab_screen_robust(display_info)
             if img_bytes:
                 self.vision_buffer.append(img_bytes)
+                if len(self.vision_buffer) > 10:
+                    self.vision_buffer = self.vision_buffer[-10:]
                 sys.stderr.write(f"DEBUG: Snapshot captured. Total: {len(self.vision_buffer)}\n")
                 self.send_to_electron("context-update", {"count": len(self.vision_buffer)})
         except Exception as e:
