@@ -78,6 +78,34 @@ python3 tests/run_smoke_tests.py
 
 ---
 
+## 📦 Packaging & Portable Release
+
+To package standalone Windows binaries (NSIS installer + Portable USB executable):
+
+1. **Build Python Engine Sidecar** (`resources/engine_sidecar.exe`):
+   ```bash
+   pip install pyinstaller
+   python scripts/build_sidecar.py
+   ```
+
+2. **Package Electron App**:
+   ```bash
+   # Build Portable zero-install EXE (for USB / lab machines):
+   npm run dist:portable
+
+   # Build NSIS Desktop Installer:
+   npm run dist:nsis
+
+   # Build both targets:
+   npm run dist:all
+   ```
+
+Output binaries are generated in `dist_electron/`:
+- `Nebula_v1.3.0_Portable.exe` (Standalone portable execution)
+- `Nebula_v1.3.0_Setup.exe` (Standard Windows installer)
+
+---
+
 ## 🧠 AI Providers
 
 Nebula auto-falls through providers if one fails:

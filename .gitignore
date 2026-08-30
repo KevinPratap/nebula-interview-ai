@@ -7,7 +7,10 @@ venv/
 # Build and distribution outputs
 dist/
 dist_electron/
-build/
+build/pyinstaller_build/
+build/pyinstaller_spec/
+resources/*.exe
+resources/engine_sidecar
 out/
 
 # Python cache & artifacts

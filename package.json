@@ -9,8 +9,12 @@
     "dev": "vite",
     "electron": "electron .",
     "build": "vite build",
+    "build:sidecar": "python3 scripts/build_sidecar.py",
     "postinstall": "electron-builder install-app-deps",
     "dist": "npm run build && electron-builder --win",
+    "dist:portable": "npm run build && electron-builder --win portable",
+    "dist:nsis": "npm run build && electron-builder --win nsis",
+    "dist:all": "npm run build && electron-builder --win nsis portable",
     "package": "npm run build && electron-packager . \"Nebula Assistant\" --platform=win32 --arch=x64 --out=dist_electron --overwrite --icon=public/logo.ico --extra-resource=resources/engine_sidecar.exe --ignore=\"^/(src|build|dist_electron|.git|.venv|tsconfig.*|vite.config.ts|eslint.config.js|.gitignore|README.md)\" --prune=true --asar"
   },
   "dependencies": {
@@ -58,10 +62,14 @@
     "win": {
       "forceCodeSigning": false,
       "target": [
-        "nsis"
+        "nsis",
+        "portable"
       ],
-      "icon": "build/icon.ico",
-      "artifactName": "Nebula_v1.2.1_FINAL.exe"
+      "icon": "public/logo.ico"
+    },
+    "portable": {
+      "artifactName": "Nebula_v${version}_Portable.exe",
+      "requestExecutionLevel": "user"
     },
     "nsis": {
       "oneClick": false,
@@ -70,11 +78,12 @@
       "createStartMenuShortcut": true,
       "allowElevation": true,
       "shortcutName": "Nebula Assistant",
-      "installerIcon": "build/icon.ico",
-      "uninstallerIcon": "build/icon.ico",
-      "installerHeaderIcon": "build/icon.ico",
-      "installerSidebar": "build/installer_banner.png",
-      "uninstallerSidebar": "build/installer_banner.png",
+      "artifactName": "Nebula_v${version}_Setup.exe",
+      "installerIcon": "public/logo.ico",
+      "uninstallerIcon": "public/logo.ico",
+      "installerHeaderIcon": "public/logo.ico",
+      "installerSidebar": "public/installer_banner.png",
+      "uninstallerSidebar": "public/installer_banner.png",
       "runAfterFinish": true
     }
   }
