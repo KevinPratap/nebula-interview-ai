@@ -1,0 +1,418 @@
+[
+  {
+    "id": "ind-cs-1",
+    "company": "TCS / Infosys",
+    "category": "Core CS & OOPS",
+    "topic": "OOPs Concepts",
+    "question": "What is the difference between abstraction and encapsulation in Object-Oriented Programming?",
+    "hint": "Abstraction focuses on hiding implementation details (what it does), while encapsulation binds data and methods together (how it protects state). Give real-world car/ATM examples."
+  },
+  {
+    "id": "ind-cs-2",
+    "company": "Infosys / Wipro",
+    "category": "Core CS & OOPS",
+    "topic": "Polymorphism",
+    "question": "Explain compile-time vs runtime polymorphism in Java/C++ with examples.",
+    "hint": "Compile-time = Method overloading / operator overloading. Runtime = Method overriding via virtual functions or dynamic method dispatch."
+  },
+  {
+    "id": "ind-cs-3",
+    "company": "TCS NQT",
+    "category": "Core CS & OOPS",
+    "topic": "DBMS / SQL",
+    "question": "What is the difference between clustered and non-clustered indexes in SQL databases?",
+    "hint": "Clustered index defines the physical order of data rows on disk (only 1 per table, usually Primary Key). Non-clustered index creates a separate pointer structure (multiple allowed)."
+  },
+  {
+    "id": "ind-cs-4",
+    "company": "Accenture / Cognizant",
+    "category": "Core CS & OOPS",
+    "topic": "DBMS Transactions",
+    "question": "What are ACID properties in DBMS, and why are they critical for financial systems?",
+    "hint": "Atomicity (all or nothing), Consistency (valid state transitions), Isolation (concurrent transactions do not interfere), Durability (persisted post-commit even after crashes)."
+  },
+  {
+    "id": "ind-cs-5",
+    "company": "TCS / Wipro",
+    "category": "Core CS & OOPS",
+    "topic": "Operating Systems",
+    "question": "Explain the difference between a process and a thread, and how context switching differs.",
+    "hint": "Process has its own virtual address space; threads share process memory/heap but have their own stack/registers. Thread context switching is cheaper because TLB/page tables are preserved."
+  },
+  {
+    "id": "ind-cs-6",
+    "company": "Infosys",
+    "category": "Core CS & OOPS",
+    "topic": "Computer Networks",
+    "question": "What happens behind the scenes when you type https://google.com in a browser and press Enter?",
+    "hint": "DNS resolution -> TCP 3-way handshake -> TLS negotiation -> HTTP GET request -> Server processing -> Response rendering -> Resource caching."
+  },
+  {
+    "id": "ind-cs-7",
+    "company": "TCS Digital",
+    "category": "Core CS & OOPS",
+    "topic": "Data Structures",
+    "question": "What is the difference between Array and LinkedList, and when would you choose one over the other?",
+    "hint": "Array: O(1) random access, contiguous memory cache-friendly, fixed size. LinkedList: O(1) insertions at head/known pointers, dynamic sizing, memory overhead for pointers."
+  },
+  {
+    "id": "ind-cs-8",
+    "company": "Capgemini / LTI",
+    "category": "Core CS & OOPS",
+    "topic": "Java Core",
+    "question": "Why is String immutable in Java, and what is the String Constant Pool?",
+    "hint": "Security (network/database connections), thread safety, caching hashcode in HashMaps, and memory optimization via String Interning pool."
+  },
+  {
+    "id": "ind-cs-9",
+    "company": "Wipro Elite",
+    "category": "Core CS & OOPS",
+    "topic": "SQL Queries",
+    "question": "How do you find the Nth highest salary in an Employee table without using LIMIT/TOP?",
+    "hint": "Use correlated subqueries (SELECT salary FROM Emp e1 WHERE N-1 = (SELECT COUNT(DISTINCT salary) FROM Emp e2 WHERE e2.salary > e1.salary)) or DENSE_RANK() window function."
+  },
+  {
+    "id": "ind-cs-10",
+    "company": "TCS Prime",
+    "category": "Core CS & OOPS",
+    "topic": "Operating Systems",
+    "question": "What is Deadlock, and what are the 4 necessary Coffman conditions for a deadlock to occur?",
+    "hint": "Mutual Exclusion, Hold and Wait, No Preemption, Circular Wait. Deadlock handling: Prevention, Avoidance (Banker algorithm), Detection & Recovery."
+  },
+  {
+    "id": "dsa-1",
+    "company": "Swiggy / Zomato",
+    "category": "DSA & Algorithms",
+    "topic": "Two Pointers / Arrays",
+    "question": "Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.",
+    "hint": "Explain brute-force O(n^2), then optimize to O(n) time and O(n) space using a Hash Map tracking complement values."
+  },
+  {
+    "id": "dsa-2",
+    "company": "Flipkart / Amazon",
+    "category": "DSA & Algorithms",
+    "topic": "Sliding Window",
+    "question": "Find the length of the longest substring without repeating characters in string s.",
+    "hint": "Use sliding window with two pointers (left, right) and a Hash Map storing the most recent index of each character to achieve O(n) time."
+  },
+  {
+    "id": "dsa-3",
+    "company": "Razorpay / PhonePe",
+    "category": "DSA & Algorithms",
+    "topic": "Linked List",
+    "question": "How do you detect a cycle in a singly linked list and find the start node of the cycle?",
+    "hint": "Floyd Tortoise and Hare algorithm (slow and fast pointers). When they meet, reset one pointer to head and advance both 1 step at a time until they meet at cycle start."
+  },
+  {
+    "id": "dsa-4",
+    "company": "Cred / Zepto",
+    "category": "DSA & Algorithms",
+    "topic": "Trees & Recursion",
+    "question": "Given the root of a binary tree, determine if it is a valid Binary Search Tree (BST).",
+    "hint": "In-order traversal yielding strictly ascending order, or recursive validation passing allowable min/max boundary constraints to child nodes."
+  },
+  {
+    "id": "dsa-5",
+    "company": "Paytm / Walmart",
+    "category": "DSA & Algorithms",
+    "topic": "Dynamic Programming",
+    "question": "Explain the 0/1 Knapsack problem and how you formulate the recurrence relation.",
+    "hint": "State dp[i][w]: max value considering first i items with weight limit w. Transition: dp[i][w] = max(dp[i-1][w], val[i] + dp[i-1][w-wt[i]]). Optimize space to 1D array."
+  },
+  {
+    "id": "dsa-6",
+    "company": "Juspay / Uber",
+    "category": "DSA & Algorithms",
+    "topic": "Graphs / BFS/DFS",
+    "question": "How do you find the shortest path in a weighted graph with non-negative edge weights? Explain Dijkstra algorithm.",
+    "hint": "Min-heap priority queue + distance array. Time complexity O((V + E) log V). Mention why it fails on negative weights (use Bellman-Ford instead)."
+  },
+  {
+    "id": "dsa-7",
+    "company": "Oracle / Adobe",
+    "category": "DSA & Algorithms",
+    "topic": "Stack / Monotonic",
+    "question": "Given an array of daily temperatures, return an array answer such that answer[i] is the number of days you have to wait after the ith day to get a warmer temperature.",
+    "hint": "Use a monotonic decreasing stack storing indices. Pop indices when current temp is higher and record difference in indices. O(n) time."
+  },
+  {
+    "id": "dsa-8",
+    "company": "Microsoft / Urban Company",
+    "category": "DSA & Algorithms",
+    "topic": "Heaps / Priority Queue",
+    "question": "Find the Kth largest element in an unsorted array.",
+    "hint": "Min-heap of size K in O(N log K) time, or QuickSelect partition algorithm in O(N) average time."
+  },
+  {
+    "id": "dsa-9",
+    "company": "Groww / Zerodha",
+    "category": "DSA & Algorithms",
+    "topic": "Binary Search",
+    "question": "Search an element in a rotated sorted array in O(log n) time.",
+    "hint": "Determine which half (left or right) is strictly sorted, then check if target falls inside that range to decide where to move binary search pointers."
+  },
+  {
+    "id": "dsa-10",
+    "company": "InMobi / Ola",
+    "category": "DSA & Algorithms",
+    "topic": "Intervals / Greedy",
+    "question": "Given an array of meeting time intervals consisting of start and end times, find the minimum number of conference rooms required.",
+    "hint": "Separate and sort start and end arrays, use two pointers or a Min-Heap of end times to find max overlapping concurrency."
+  },
+  {
+    "id": "sys-1",
+    "company": "Razorpay / Stripe",
+    "category": "System Design",
+    "topic": "Idempotency",
+    "question": "How do you ensure idempotency in payment processing systems to prevent duplicate charges?",
+    "hint": "Idempotency Keys passed in HTTP headers, stored in Redis/DB with unique constraints, atomic locking before debiting, and returning cached responses on retries."
+  },
+  {
+    "id": "sys-2",
+    "company": "Zomato / Swiggy",
+    "category": "System Design",
+    "topic": "Caching & Redis",
+    "question": "Explain Cache Eviction strategies (LRU, LFU) and how to handle Cache Stampede (Thundering Herd).",
+    "hint": "LRU using Hash Map + Doubly Linked List. Cache stampede mitigation: Mutex locks on cache misses, probabilistic early expiration (XFetch), background refresh."
+  },
+  {
+    "id": "sys-3",
+    "company": "Flipkart / Amazon",
+    "category": "System Design",
+    "topic": "Database Scaling",
+    "question": "What is the difference between vertical scaling and horizontal database sharding, and how do you handle cross-shard queries?",
+    "hint": "Sharding by shard key (Hash or Range-based). Challenges: Resharding, scatter-gather queries, distributed transactions, 2-phase commit."
+  },
+  {
+    "id": "sys-4",
+    "company": "Uber / Ola",
+    "category": "System Design",
+    "topic": "Geospatial Indexing",
+    "question": "How would you design a live driver location tracking and matching service for ride-sharing?",
+    "hint": "WebSocket/gRPC for location telemetry, Redis Geospatial / Google S2 / Uber H3 hexagonal spatial indexing for proximity queries."
+  },
+  {
+    "id": "sys-5",
+    "company": "Paytm / Zerodha",
+    "category": "System Design",
+    "topic": "Message Queues",
+    "question": "When would you use Apache Kafka vs RabbitMQ, and how do you achieve exactly-once processing?",
+    "hint": "Kafka: Distributed log, high throughput, replayable event streaming. RabbitMQ: Complex routing, message broker. Exactly-once: At-least-once delivery + Idempotent consumers."
+  },
+  {
+    "id": "sys-6",
+    "company": "CRED",
+    "category": "System Design",
+    "topic": "Rate Limiting",
+    "question": "Design an API Rate Limiter. Compare Token Bucket, Leaky Bucket, and Sliding Window Log algorithms.",
+    "hint": "Token Bucket allows bursts; Leaky Bucket smoothens rate; Sliding Window Counter in Redis using ZADD/ZRANGEBYSCORE provides precision with low memory."
+  },
+  {
+    "id": "sys-7",
+    "company": "Hotstar / Netflix",
+    "category": "System Design",
+    "topic": "CDN & Video Streaming",
+    "question": "How does Adaptive Bitrate Streaming (HLS/DASH) and CDN edge caching work during high-traffic live cricket/sports events?",
+    "hint": "Video chunking (.ts/.m4s files), manifest files (m3u8), edge caching close to users, multi-CDN routing, fallback quality levels on bandwidth drop."
+  },
+  {
+    "id": "sys-8",
+    "company": "Tech Mahindra / Wipro",
+    "category": "System Design",
+    "topic": "REST vs GraphQL vs gRPC",
+    "question": "Compare REST, GraphQL, and gRPC. In which scenarios is each preferred?",
+    "hint": "REST for standard public APIs; GraphQL for flexible mobile client payloads without over-fetching; gRPC with Protocol Buffers for high-performance internal microservices."
+  },
+  {
+    "id": "star-1",
+    "company": "All Companies",
+    "category": "Behavioral (STAR)",
+    "topic": "Conflict Resolution",
+    "question": "Tell me about a time when you had a disagreement with a team member or project lead. How did you handle it?",
+    "hint": "Situation: Group project or internship. Task: Disagreement on tech stack/architecture. Action: Listened objectively, built a quick prototype/benchmark data, focused on project goals. Result: Adopted best solution and maintained positive relationship."
+  },
+  {
+    "id": "star-2",
+    "company": "All Companies",
+    "category": "Behavioral (STAR)",
+    "topic": "Challenging Technical Bug",
+    "question": "Describe the most challenging technical bug you encountered in a project and how you diagnosed and resolved it.",
+    "hint": "Situation: Race condition, memory leak, or prod failure. Task: Fix without breaking deadlines. Action: Replicated locally, analyzed logs/profiler, identified root cause, wrote test suite. Result: Resolved, improved monitoring."
+  },
+  {
+    "id": "star-3",
+    "company": "All Companies",
+    "category": "Behavioral (STAR)",
+    "topic": "Tight Deadline & Priority",
+    "question": "Give an example of a situation where you were faced with multiple competing deadlines. How did you prioritize?",
+    "hint": "Situation: Final year project + campus exams + hackathon. Task: Deliver high quality without burnout. Action: Eisenhower matrix, broke down deliverables into daily milestones, communicated early. Result: Delivered all on time with high grades."
+  },
+  {
+    "id": "star-4",
+    "company": "All Companies",
+    "category": "Behavioral (STAR)",
+    "topic": "Handling Failure",
+    "question": "Tell me about a time a project or initiative you worked on failed or did not meet expectations. What did you learn?",
+    "hint": "Situation: Hackathon or startup project with low adoption. Task: Understand what went wrong. Action: Conducted post-mortem, gathered user feedback, realized gap in UX/requirements. Result: Applied learning to next project which succeeded."
+  },
+  {
+    "id": "star-5",
+    "company": "All Companies",
+    "category": "Behavioral (STAR)",
+    "topic": "Leadership & Initiative",
+    "question": "Describe a situation where you took the initiative to improve a process or solve an unassigned problem.",
+    "hint": "Situation: Manual deployment or repetitive test step. Task: Automate to save team time. Action: Built a CI script or tool outside assigned tickets. Result: Cut deployment time by 50% and adopted by the whole team."
+  },
+  {
+    "id": "star-6",
+    "company": "All Companies",
+    "category": "Behavioral (STAR)",
+    "topic": "Why Should We Hire You?",
+    "question": "Why should we hire you over other qualified candidates applying for this role?",
+    "hint": "Synthesize 3 pillars: Solid CS fundamentals + Proven hands-on project execution + High curiosity and fast learning agility tailored to the company domain."
+  },
+  {
+    "id": "ind-cs-11",
+    "company": "Infosys / TCS",
+    "category": "Core CS & OOPS",
+    "topic": "C++ / Memory",
+    "question": "What is the difference between shallow copy and deep copy in C++ / Python, and how do you implement copy constructors?",
+    "hint": "Shallow copy duplicates member values including raw pointer addresses (leading to double free). Deep copy allocates new memory and copies the actual underlying data."
+  },
+  {
+    "id": "ind-cs-12",
+    "company": "Wipro / Cognizant",
+    "category": "Core CS & OOPS",
+    "topic": "DBMS / Normalization",
+    "question": "Explain 1NF, 2NF, 3NF, and BCNF database normalization forms with a simple student/course example.",
+    "hint": "1NF: Atomic values, no repeating groups. 2NF: 1NF + No partial dependencies on composite PK. 3NF: 2NF + No transitive dependencies. BCNF: Every determinant is a candidate key."
+  },
+  {
+    "id": "ind-cs-13",
+    "company": "Accenture",
+    "category": "Core CS & OOPS",
+    "topic": "Operating Systems",
+    "question": "What is Virtual Memory and Page Fault? Explain the working of the Translation Lookaside Buffer (TLB).",
+    "hint": "Virtual memory gives process illusion of contiguous address space larger than RAM. Page Fault occurs when virtual page is not in physical RAM frame. TLB is a high-speed hardware cache for page table lookups."
+  },
+  {
+    "id": "ind-cs-14",
+    "company": "TCS Digital",
+    "category": "Core CS & OOPS",
+    "topic": "Networking",
+    "question": "Compare TCP vs UDP. Why do video games and streaming often use UDP while web browsing uses TCP?",
+    "hint": "TCP: Connection-oriented, reliable, ordered, flow/congestion control, 3-way handshake. UDP: Connectionless, lightweight, low-latency, tolerates packet loss."
+  },
+  {
+    "id": "ind-cs-15",
+    "company": "Tech Mahindra",
+    "category": "Core CS & OOPS",
+    "topic": "Data Structures",
+    "question": "How does a Hash Map handle collisions? Compare Chaining vs Open Addressing (Linear/Quadratic Probing).",
+    "hint": "Separate Chaining: Array of Linked Lists / Red-Black Trees (Java 8+). Open Addressing: Probe for next available slot in table."
+  },
+  {
+    "id": "dsa-11",
+    "company": "Flipkart / Amazon",
+    "category": "DSA & Algorithms",
+    "topic": "Trie / Prefix Tree",
+    "question": "Design a Trie (Prefix Tree) with insert, search, and startsWith methods.",
+    "hint": "Node structure with 26-element child array or hash map + isEndOfWord boolean. Time complexity O(L) where L is word length."
+  },
+  {
+    "id": "dsa-12",
+    "company": "Zomato / Blinkit",
+    "category": "DSA & Algorithms",
+    "topic": "Graph / Topological Sort",
+    "question": "Explain Course Schedule (Course prerequisites detection) using Kahn Algorithm (BFS topological sort).",
+    "hint": "Build adjacency list and in-degree array. Queue all nodes with in-degree 0. As you process nodes, decrement neighbor in-degrees and queue new 0s. If processed count == N, no cycle."
+  },
+  {
+    "id": "dsa-13",
+    "company": "Microsoft",
+    "category": "DSA & Algorithms",
+    "topic": "Dynamic Programming",
+    "question": "Find the length of the Longest Increasing Subsequence (LIS) in O(n log n) time.",
+    "hint": "Use patience sorting / binary search ( or ) maintaining tails array of active sub-sequences."
+  },
+  {
+    "id": "dsa-14",
+    "company": "Paytm",
+    "category": "DSA & Algorithms",
+    "topic": "Binary Tree / LCA",
+    "question": "Find the Lowest Common Ancestor (LCA) of two nodes in a Binary Tree.",
+    "hint": "Post-order recursive traversal: if current root matches p or q, return root. Recurse left and right. If both return non-null, root is LCA; otherwise return whichever is non-null."
+  },
+  {
+    "id": "dsa-15",
+    "company": "Swiggy",
+    "category": "DSA & Algorithms",
+    "topic": "Sliding Window Maximum",
+    "question": "Given an array nums and sliding window size k, return the max sliding window values in O(n) time.",
+    "hint": "Monotonic decreasing Deque storing indices of candidate elements in current window. Pop smaller elements from back before pushing, and pop elements outside window from front."
+  },
+  {
+    "id": "sys-9",
+    "company": "Razorpay",
+    "category": "System Design",
+    "topic": "Authentication & JWT",
+    "question": "How do JSON Web Tokens (JWT) work, and what are the security risks of storing them in LocalStorage vs HttpOnly Cookies?",
+    "hint": "JWT header.payload.signature. LocalStorage is vulnerable to XSS (cross-site scripting). HttpOnly SameSite cookies protect against XSS, but require CSRF tokens."
+  },
+  {
+    "id": "sys-10",
+    "company": "Zerodha",
+    "category": "System Design",
+    "topic": "High-Throughput Order Book",
+    "question": "How would you design a low-latency stock trading order matching engine capable of 100k orders/second?",
+    "hint": "In-memory order book using Price-Time Priority (B-Tree or SkipList for price levels + Doubly Linked List for FIFO orders at same price level), sequential memory layout in C++/Rust, ring buffers (LMAX Disruptor)."
+  },
+  {
+    "id": "sys-11",
+    "company": "Swiggy / Zomato",
+    "category": "System Design",
+    "topic": "Notification System",
+    "question": "Design a Distributed Notification Service supporting Push, SMS, and Email at scale with priority queues.",
+    "hint": "API Gateway -> User Preferences DB -> Message Broker (Kafka/RabbitMQ) with high/low priority topics -> Worker pools for APNs/FCM, Twilio, SendGrid -> Rate limiters and retry DLQ."
+  },
+  {
+    "id": "sys-12",
+    "company": "PhonePe",
+    "category": "System Design",
+    "topic": "Distributed Locking",
+    "question": "How do you implement a Distributed Lock with Redis (Redlock algorithm), and what happens if the node crashes during lock hold?",
+    "hint": "SET resource_name my_random_value NX PX 30000. Release via Lua script matching random token. Watch out for clock drift and GC pauses."
+  },
+  {
+    "id": "star-7",
+    "company": "All Companies",
+    "category": "Behavioral (STAR)",
+    "topic": "Working with Difficult Stakeholder",
+    "question": "Tell me about a time you had to deliver bad news or explain a project delay to a manager or client.",
+    "hint": "Situation: Unexpected blocker/third-party API failure. Task: Communicate setback without panic. Action: Gathered root cause facts, prepared 2 alternative mitigation options, proactively scheduled meeting. Result: Stakeholder appreciated transparency and approved revised timeline."
+  },
+  {
+    "id": "star-8",
+    "company": "All Companies",
+    "category": "Behavioral (STAR)",
+    "topic": "Continuous Learning",
+    "question": "How do you keep up with rapidly evolving technologies and software engineering best practices?",
+    "hint": "Situation: Emerging AI & cloud tools. Task: Build modern production skills. Action: Read engineering blogs (Uber, Netflix), build open-source projects, experiment with new SDKs hands-on. Result: Applied new stack to win hackathon or improve repo."
+  },
+  {
+    "id": "star-9",
+    "company": "All Companies",
+    "category": "Behavioral (STAR)",
+    "topic": "Working Under Ambiguity",
+    "question": "Describe a project where requirements were vague or constantly changing. How did you proceed?",
+    "hint": "Situation: Hackathon or exploratory client project with unclear specs. Task: Build viable product. Action: Created minimal MVP wireframes, set short 2-day feedback loops, asked targeted clarifying questions. Result: Clarified scope and delivered on time."
+  },
+  {
+    "id": "star-10",
+    "company": "All Companies",
+    "category": "Behavioral (STAR)",
+    "topic": "Ethics & Code Quality",
+    "question": "Tell me about a time you had to choose between delivering quickly vs maintaining high code quality.",
+    "hint": "Situation: Crunch deadline before release. Task: Avoid shipping technical debt that causes production outages. Action: Shipped minimal core feature with unit tests, documented tech debt, scheduled refactor sprint immediately after. Result: Shipped on time with zero P0 regressions."
+  }
+]

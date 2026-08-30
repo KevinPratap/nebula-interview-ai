@@ -11,6 +11,7 @@ const ALLOWED_RECEIVE_CHANNELS = [
   'session-started-received', 'settings-data-received', 'audio-devices-data-received', 
   'output-devices-data-received', 'output-device-updated-received',
   'available-models-received', 'api-keys-received', 'api-keys-updated-received',
+  'volume-received',
   'context-update-received', 'context-count-received', 'resume-parsed-received', 
   'context-fetched-received', 'registration-report', 'open-external-url', 'toggle-stealth', 
   'ready-received', 'session-status', 'saved-notes', 'saved-notes-received', 

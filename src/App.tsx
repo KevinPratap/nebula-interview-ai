@@ -22,11 +22,16 @@ import {
   EyeOff,
   ClipboardList,
   Minimize2,
-  History
+  History,
+  BookOpen,
+  Sparkles,
+  Search,
+  Award
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import './App.css'
 import Tooltip from './components/Tooltip'
+import questionBank from './data/question_bank.json'
 
 declare global {
   interface Window {
@@ -34,7 +39,7 @@ declare global {
   }
 }
 
-type DrawerMode = 'response' | 'account' | 'settings' | 'strategy' | 'chat' | 'history' | 'notes';
+type DrawerMode = 'response' | 'account' | 'settings' | 'strategy' | 'chat' | 'history' | 'notes' | 'practice';
 
 const springGentle: any = { type: "spring", stiffness: 300, damping: 30 };
 
@@ -224,8 +229,12 @@ function App() {
   const [modelDefaults, setModelDefaults] = useState<{ [provider: string]: string }>({})
 
   const [settingsTab, setSettingsTab] = useState<'General' | 'Display' | 'Hotkeys' | 'Updates' | 'API Keys'>('General')
+  const [volume, setVolume] = useState(0)
+  const [practiceCategory, setPracticeCategory] = useState('All')
+  const [practiceSearch, setPracticeSearch] = useState('')
 
   const chatInputRef = useRef<HTMLInputElement>(null)
+  const chatScrollRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
   // Toast notification system (v1.3.0)
@@ -243,6 +252,13 @@ function App() {
   const [sidecarConnected, setSidecarConnected] = useState(true)
   const sidecarConnectedRef = useRef(true) // Ref to avoid stale closures
   const healthCheckRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  // Auto-scroll chat / response stream
+  useEffect(() => {
+    if (drawerMode === 'response' && chatScrollRef.current) {
+      chatScrollRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [aiResponse, isThinking, liveTranscript]);
 
   // Auto-focus Chat Input (v1.1.8)
   useEffect(() => {
@@ -554,6 +570,11 @@ function App() {
       setSettings((prev: any) => ({ ...prev, stealth_mode: enabled }));
     }));
 
+    // Audio volume VU meter listener
+    subs.push(window.electron?.ipcRenderer.on('volume-received', (data: any) => {
+      setVolume(typeof data?.level === 'number' ? data.level : 0);
+    }));
+
     // Meeting Notes IPC listeners
     const handleSessionStatus = (s: any) => {
       console.log("UI: Session status:", s);
@@ -715,6 +736,43 @@ function App() {
     window.electron?.ipcRenderer.send('toggle-listening', ns);
   };
 
+  const toggleInterviewMode = () => {
+    const nextState = !settings.interview_mode;
+    const newSettings = { ...settings, interview_mode: nextState };
+    setSettings(newSettings);
+    window.electron?.ipcRenderer.send('send-to-sidecar', {
+      action: 'save-settings',
+      payload: newSettings
+    });
+    if (nextState) {
+      if (!isLive) {
+        setIsLive(true);
+        window.electron?.ipcRenderer.send('toggle-listening', true);
+      }
+      setDrawerOpen(true);
+      setDrawerMode('response');
+      showToast('Interview Mode Active (Loopback Audio + STAR Armed)', 'success');
+      setStatus('INTERVIEW MODE ACTIVE');
+    } else {
+      showToast('Interview Mode Deactivated', 'info');
+      setStatus('Nebula Ready');
+    }
+  };
+
+  const handlePracticeQuestion = (q: any) => {
+    setAiResponse('');
+    setDrawerMode('response');
+    setDrawerOpen(true);
+    setStatus(`PRACTICE: ${q.topic}`);
+    setIsThinking(true);
+    window.electron?.ipcRenderer.send('send-to-sidecar', {
+      action: 'fake-transcript',
+      payload: q.question
+    });
+    window.electron?.ipcRenderer.send('send-to-sidecar', { action: 'trigger-ai' });
+    showToast(`Loaded ${q.topic} question into AI Copilot`, 'success');
+  };
+
   const handleLockedClick = (mode: DrawerMode) => {
     toggleDrawer(mode);
   };
@@ -813,7 +871,15 @@ function App() {
             </Tooltip>
             <div className={`status-indicator ${isError ? 'error' : (isLive ? 'pulse' : '')}`} />
             {isLive && !settings.stealth_mode && (
-              <span className="recording-dot" />
+              <>
+                <span className="recording-dot" />
+                <div className="vu-meter" title={`Audio Level: ${volume}%`}>
+                  <span className={`vu-bar ${volume > 5 ? 'active' : ''}`} />
+                  <span className={`vu-bar ${volume > 25 ? 'active' : ''}`} />
+                  <span className={`vu-bar ${volume > 50 ? 'active' : ''}`} />
+                  <span className={`vu-bar ${volume > 75 ? 'active' : ''}`} />
+                </div>
+              </>
             )}
             <div className="brand-title">
               NEBULA <span className={`brand-status ${isError ? 'error-text' : ''}`}>// {status}</span>
@@ -821,6 +887,26 @@ function App() {
           </div>
 
           <div className="pill-right">
+
+            {/* One-Click Interview Mode Toggle */}
+            <Tooltip disabled={!settings.show_tooltips} label="Interview Mode" description={settings.interview_mode ? "Interview Mode Active: Listening + STAR armed. Click to disarm." : "One-Click Interview Mode: Arms live loopback listening + STAR answer structure."} position="bottom" delay={0.2}>
+              <button
+                className={`icon-circle no-drag ${settings.interview_mode ? 'btn-accent glow-subtle' : ''}`}
+                onClick={toggleInterviewMode}
+              >
+                <Zap size={18} />
+              </button>
+            </Tooltip>
+
+            {/* Indian Placement Question Bank */}
+            <Tooltip disabled={!settings.show_tooltips} label="Practice Kit" description="52 Indian Placement & Tech Interview practice questions (TCS, Infosys, SDE1, STAR)." position="bottom" delay={0.2}>
+              <button
+                className={`icon-circle no-drag ${drawerMode === 'practice' && drawerOpen ? 'btn-accent' : ''}`}
+                onClick={() => toggleDrawer('practice')}
+              >
+                <BookOpen size={18} />
+              </button>
+            </Tooltip>
 
             {/* Zone 1: Preparation (Contextual) */}
             <Tooltip disabled={!settings.show_tooltips} label="Intelligence Strategy" description="Adjust AI behavior, upload resumes, or provide custom job context." position="bottom" delay={0.2} shortcut={settings.hotkey_strategy}>
@@ -1052,7 +1138,7 @@ function App() {
               </button>
             </Tooltip>
             <AnimatePresence mode="wait">
-              {/* Account */}
+              {/* Account / Diagnostics Splash */}
               {drawerMode === 'account' && (
                 <motion.div
                   key="account-view"
@@ -1063,21 +1149,123 @@ function App() {
                   className="view-content"
                 >
                   <div className="view-header">
-                    <h2><span className="header-slash">//</span> ABOUT</h2>
+                    <h2><span className="header-slash">//</span> SYSTEM STATUS & ABOUT</h2>
                   </div>
-                  <div className="auth-panel" style={{ padding: '24px', textAlign: 'center' }}>
+
+                  {/* Startup Status Diagnostic Splash */}
+                  <div className="diagnostic-splash">
+                    <div className="diagnostic-item">
+                      <span className="diagnostic-label">AI Engine</span>
+                      <span className="diagnostic-value">6 Providers Active (Auto-Fallback)</span>
+                    </div>
+                    <div className="diagnostic-item">
+                      <span className="diagnostic-label">Audio Pipeline</span>
+                      <span className="diagnostic-value">{isLive ? 'Live Capturing' : 'Loopback Standby'}</span>
+                    </div>
+                    <div className="diagnostic-item">
+                      <span className="diagnostic-label">Survival Kit</span>
+                      <span className="diagnostic-value">{questionBank.length} Placement Questions</span>
+                    </div>
+                  </div>
+
+                  <div className="auth-panel" style={{ padding: '20px', textAlign: 'center' }}>
                     <p style={{ fontSize: '15px', fontWeight: 700, marginBottom: '8px' }}>
                       Nebula Interview AI — Open Source Edition
                     </p>
-                    <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '16px' }}>
-                      v1.3.0
+                    <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '8px' }}>
+                      v1.3.0 OSS • MIT License
                     </p>
-                    <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '16px' }}>
-                      MIT License
+                    <p style={{ fontSize: '12px', color: 'var(--text-dim)', lineHeight: 1.5, marginBottom: '16px' }}>
+                      Privacy-first interview copilot with zero cloud dependency. Run on your own API keys.
                     </p>
-                    <p style={{ fontSize: '12px', color: 'var(--text-dim)', lineHeight: 1.5 }}>
-                      Works fully offline. Set API keys via environment variables (GROQ_API_KEY, OPENAI_API_KEY, GEMINI_API_KEY).
-                    </p>
+                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                      <button 
+                        className="btn-premium btn-accent" 
+                        onClick={() => toggleDrawer('practice')}
+                      >
+                        Open Practice Kit ({questionBank.length})
+                      </button>
+                      <button 
+                        className="btn-premium" 
+                        onClick={() => toggleDrawer('settings')}
+                      >
+                        Configure API Keys
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Practice Kit / Question Bank Drawer */}
+              {drawerMode === 'practice' && (
+                <motion.div
+                  key="practice-view"
+                  initial={{ opacity: 0, x: 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -10 }}
+                  transition={{ duration: 0.2 }}
+                  className="view-content"
+                  style={{ maxHeight: '600px', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+                >
+                  <div className="view-header">
+                    <h2><span className="header-slash">//</span> INDIAN TECH INTERVIEW SURVIVAL KIT</h2>
+                    <span className="practice-badge">{questionBank.length} Curated Questions</span>
+                  </div>
+
+                  <div className="practice-container">
+                    <input
+                      type="text"
+                      className="practice-search-input no-drag"
+                      placeholder="Search questions by topic, company (TCS, Infosys, Flipkart), or concept..."
+                      value={practiceSearch}
+                      onChange={(e) => setPracticeSearch(e.target.value)}
+                    />
+
+                    <div className="practice-categories no-drag">
+                      {['All', 'Core CS & OOPS', 'DSA & Algorithms', 'System Design', 'Behavioral (STAR)'].map((cat) => (
+                        <button
+                          key={cat}
+                          className={`practice-cat-btn ${practiceCategory === cat ? 'active' : ''}`}
+                          onClick={() => setPracticeCategory(cat)}
+                        >
+                          {cat}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="practice-list">
+                      {questionBank
+                        .filter((q: any) => {
+                          const matchesCat = practiceCategory === 'All' || q.category === practiceCategory;
+                          const matchesSearch = !practiceSearch || 
+                            q.question.toLowerCase().includes(practiceSearch.toLowerCase()) || 
+                            q.topic.toLowerCase().includes(practiceSearch.toLowerCase()) ||
+                            q.company.toLowerCase().includes(practiceSearch.toLowerCase());
+                          return matchesCat && matchesSearch;
+                        })
+                        .map((q: any) => (
+                          <div key={q.id} className="practice-card no-drag">
+                            <div className="practice-card-header">
+                              <span className="practice-badge">{q.company}</span>
+                              <span className="practice-topic-badge">{q.topic}</span>
+                            </div>
+                            <p className="practice-question-text">{q.question}</p>
+                            {q.hint && (
+                              <div className="practice-hint-text">
+                                <strong>Key points:</strong> {q.hint}
+                              </div>
+                            )}
+                            <div className="practice-action-row">
+                              <button
+                                className="practice-trigger-btn"
+                                onClick={() => handlePracticeQuestion(q)}
+                              >
+                                <Zap size={14} /> Generate Answer (STAR)
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
                   </div>
                 </motion.div>
               )}
@@ -1350,6 +1538,12 @@ function App() {
                           <div className="settings-section">
                             <h3>PRIVACY</h3>
                             <div className="setting-card">
+                              <Tooltip disabled={!settings.show_tooltips} label="Interview Mode" description="Automatically arm live loopback listening and STAR structured guidance on launch." position="bottom" delay={0.3}>
+                                <div className="setting-row" onClick={() => updateSetting('interview_mode', !settings.interview_mode)}>
+                                  <span>Interview Mode (Auto-Listen + STAR)</span>
+                                  <Toggle checked={settings.interview_mode} onChange={(v) => updateSetting('interview_mode', v)} />
+                                </div>
+                              </Tooltip>
                               <Tooltip disabled={!settings.show_tooltips} label="Screen Protection" description="Protect your privacy by hiding the Nebula window from screenshots and screen sharing." position="bottom" delay={0.3}>
                                 <div className="setting-row" onClick={() => updateSetting('stealth_mode', !settings.stealth_mode)}>
                                   <span>Screen Protection</span>
@@ -1740,6 +1934,7 @@ function App() {
                           <span style={{ fontSize: '14px', fontWeight: 500 }}>Ask me anything...</span>
                         </div>
                       )}
+                      <div ref={chatScrollRef} />
                     </div>
                   </div>
                 </motion.div>
