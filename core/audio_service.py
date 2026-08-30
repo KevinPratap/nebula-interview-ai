@@ -101,29 +101,43 @@ class AudioService:
 
     def _record_loop_soundcard(self):
         """WASAPI loopback via soundcard, following the DEFAULT output device.
-        Re-resolves the endpoint every 5s so switching speakers/headphones is picked up.
+        Honors an explicit selection: device_index like "Speaker (Realtek) [System Loopback]"
+        routes capture to that exact endpoint. Re-resolves the endpoint every 5s so
+        switching speakers/headphones is picked up.
         Pushes numpy float32 mono 100ms blocks (48000Hz) into the same queue."""
         import soundcard as sc
         rate = 48000
         last_resolve = 0.0
         mic = None
+        selected_name = None
+        if self.device_index is not None:
+            sel = str(self.device_index)
+            if sel.startswith("[System Loopback]"):
+                selected_name = sel.replace("[System Loopback]", "").strip()
         while self.is_listening:
             try:
                 if mic is None or (time.time() - last_resolve) > 5.0:
-                    default_speaker = sc.default_speaker()
                     loopbacks = [m for m in sc.all_microphones(include_loopback=True) if m.isloopback]
                     mic = None
-                    if default_speaker is not None:
+                    if selected_name:
                         for lb in loopbacks:
-                            if lb.name.strip().lower() == default_speaker.name.strip().lower():
+                            if lb.name.strip().lower() == selected_name.lower():
                                 mic = lb
                                 break
+                    if mic is None:
+                        default_speaker = sc.default_speaker()
+                        if default_speaker is not None:
+                            for lb in loopbacks:
+                                if lb.name.strip().lower() == default_speaker.name.strip().lower():
+                                    mic = lb
+                                    break
                     if mic is None and loopbacks:
                         mic = loopbacks[0]
                     last_resolve = time.time()
                     if mic is not None:
                         self.active_device_name = mic.name
-                        sys.stderr.write(f"DEBUG: Loopback capture -> [{mic.name}]\n")
+                        tag = "selected" if (selected_name and mic.name.strip().lower() == selected_name.lower()) else "default"
+                        sys.stderr.write(f"DEBUG: Loopback capture -> [{mic.name}] ({tag})\n")
                         sys.stderr.flush()
                 if mic is None:
                     time.sleep(1)
@@ -215,14 +229,15 @@ class AudioService:
                         }
                 except: pass
 
-            # Manual device by name (match PyAudio device exactly)
+            # Manual device by name (match PyAudio device exactly, ignoring the [Tag] suffix)
             if self.device_index is not None:
                 device_str = str(self.device_index)
+                base_name = device_str.split(" [")[0].strip()  # strip "[Microphone]" / "[Stereo Mix Loopback]" tags
                 for i in range(self.p.get_device_count()):
                     try:
                         info = self.p.get_device_info_by_index(i)
                         dev_name = info.get('name', '')
-                        if info.get('maxInputChannels', 0) > 0 and device_str == dev_name:
+                        if info.get('maxInputChannels', 0) > 0 and base_name == dev_name.strip():
                             return {
                                 "index": i,
                                 "channels": int(info.get('maxInputChannels', 2)),

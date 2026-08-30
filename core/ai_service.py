@@ -15,44 +15,51 @@ except ImportError:
 
 # Per-provider model lists with sensible defaults
 PROVIDER_MODEL_LISTS = {
+    # Verified Aug 2026. Free-tier-first: Indian students pay per token.
     "groq": [
-        "llama-3.3-70b-versatile",
-        "llama-3.2-90b-vision-preview",
-        "mixtral-8x7b-32768",
-        "gemma2-9b-it",
-        "llama-3.1-8b-instant",
+        "openai/gpt-oss-120b",                    # flagship reasoning, free tier
+        "meta-llama/llama-4-scout-17b-16e-instruct",  # fast workhorse, free tier
+        "openai/gpt-oss-20b",                     # lighter, free tier
+        "qwen/qwen3-32b",                         # strong coding, free tier
+        "moonshotai/kimi-k2-instruct",            # long context, free tier
+        "llama-3.3-70b-versatile",                # legacy, still live
     ],
     "gemini": [
-        "gemini-2.5-flash",
-        "gemini-2.5-pro",
-        "gemini-2.0-flash",
+        "gemini-2.5-flash",       # stable, generous free tier (default)
+        "gemini-2.5-pro",         # strongest 2.5, paid
+        "gemini-2.0-flash",       # legacy fast
+        "gemini-3.7-flash",       # newest flash (verify SDK support on your key)
     ],
     "openai": [
-        "gpt-4o",
-        "gpt-4o-mini",
-        "gpt-4-turbo",
-        "gpt-3.5-turbo",
+        "gpt-4o",                 # default, balanced
+        "gpt-4o-mini",            # cheapest capable
+        "gpt-4.1",                # newer, stronger
+        "gpt-4.1-mini",           # cheap + fast
+        "gpt-4.1-nano",           # smallest/fastest
+        "o3-mini",                # reasoning, cheap
+        "o4-mini",                # reasoning, newer
     ],
     "anthropic": [
-        "claude-sonnet-4-20250514",
-        "claude-3-5-sonnet-latest",
-        "claude-3-haiku-20240307",
+        "claude-sonnet-4-6",      # default (replaces retired sonnet-4)
+        "claude-sonnet-5",        # strongest Sonnet (Jun 2026)
+        "claude-opus-4-8",        # heavy reasoning, paid
+        "claude-3-5-haiku-20241022",  # cheap + fast
     ],
     "deepseek": [
-        "deepseek-chat",
-        "deepseek-reasoner",
+        "deepseek-chat",          # stable alias (v3.x), default
+        "deepseek-reasoner",      # R-series reasoning
     ],
     "openrouter": [],  # Free-text input, any model ID
 }
 
 # Default model for each provider (first in the list or explicit)
 PROVIDER_DEFAULT_MODELS = {
-    "groq": "llama-3.3-70b-versatile",
+    "groq": "openai/gpt-oss-120b",
     "gemini": "gemini-2.5-flash",
     "openai": "gpt-4o",
-    "anthropic": "claude-sonnet-4-20250514",
+    "anthropic": "claude-sonnet-4-6",
     "deepseek": "deepseek-chat",
-    "openrouter": "gpt-4o",
+    "openrouter": "",
 }
 
 class AIService:
