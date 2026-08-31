@@ -229,6 +229,12 @@ function registerShortcuts(config = {}) {
         }
 
         try {
+            // Reject masked/garbage accelerators before touching globalShortcut
+            if (!/^[A-Za-z0-9+]+(\+[A-Za-z0-9]+)*$/.test(key) || key.includes('*')) {
+                logToFile(`Main: Rejected invalid accelerator: ${key} for ${action}`);
+                registrationStats.push({ action, key, success: false, error: 'invalid accelerator' });
+                return;
+            }
             // Check if already taken
             if (globalShortcut.isRegistered(key)) {
                 logToFile(`Main: [CONFLICT] ${key} is ALREADY IN USE. External App or Duplicate Nebula Binding?`);

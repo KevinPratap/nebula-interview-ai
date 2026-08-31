@@ -398,8 +398,12 @@ class SidecarEngine:
 
         elif action == "get-settings":
             safe_settings = dict(self.settings.settings)
+            # Mask ONLY api key fields. "hotkey" contains "key" - a naive
+            # substring mask silently breaks hotkey registration in main.js.
+            secret_fields = {"groq_api_key", "gemini_api_key", "openai_api_key",
+                             "anthropic_api_key", "deepseek_api_key", "openrouter_api_key"}
             for k in list(safe_settings.keys()):
-                if "key" in k.lower() or "secret" in k.lower():
+                if k in secret_fields or "secret" in k.lower():
                     val = str(safe_settings[k])
                     if val and len(val) > 8:
                         safe_settings[k] = f"{val[:4]}...{val[-4:]}"
