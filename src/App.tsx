@@ -1660,19 +1660,6 @@ function App() {
                           <div className="settings-section">
                             <h3>VISUALS</h3>
                             <div className="setting-card">
-                              <Tooltip disabled={!settings.show_tooltips} label="Font Size" description="Adjust the text size for better readability of AI responses." position="bottom" delay={0.3}>
-                                <div className="setting-row">
-                                  <span>Font Size</span>
-                                    <PremiumStepper
-                                      value={settings.text_size}
-                                      onChange={(v) => updateSetting('text_size', v)}
-                                      min={12}
-                                      max={32}
-                                      step={2}
-                                      unit="px"
-                                    />
-                                </div>
-                              </Tooltip>
                               <Tooltip disabled={!settings.show_tooltips} label="Opacity" description="Change the transparency level of the Nebula interface." position="bottom" delay={0.3}>
                                 <div className="setting-row">
                                   <span>Opacity</span>

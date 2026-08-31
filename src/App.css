@@ -206,12 +206,20 @@ body {
   overflow: hidden;
 }
 
-.pill-left,
+.pill-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+}
+
 .pill-right {
   display: flex;
   align-items: center;
   gap: 8px;
-  /* Compacted v1.1.48 */
+  flex-shrink: 0;
 }
 
 /* Drawer open: compact the pill so buttons never spill past the pill edge */
@@ -220,7 +228,7 @@ body {
   gap: 6px;
 }
 .pill-compact .brand-status {
-  max-width: 200px;
+  max-width: 160px;
 }
 .pill-compact .pill-right {
   gap: 4px;
@@ -241,6 +249,10 @@ body {
   letter-spacing: 1px;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   font-family: 'Outfit', sans-serif;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 
 .status-indicator {
@@ -2640,6 +2652,7 @@ body {
 
 .api-model-select {
   width: 100%;
+  max-width: 100%;
   padding: 8px 12px;
   border-radius: 8px;
   border: 1px solid var(--border-glass);
@@ -2649,6 +2662,9 @@ body {
   outline: none;
   cursor: default;
   -webkit-app-region: no-drag;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 /* Tray button label (Exit -> Hide) */
