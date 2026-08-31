@@ -418,6 +418,13 @@ function startSidecar() {
 
         // Exponential backoff: 2s, 4s, 8s, 16s, 32s, capped at 60s
         sidecarRestartAttempts++;
+        if (sidecarRestartAttempts > 5) {
+            logToFile(`Sidecar failed ${sidecarRestartAttempts} times - giving up, no more restarts.`);
+            if (mainWindow && !mainWindow.isDestroyed() && mainWindow.webContents) {
+                mainWindow.webContents.send('status-received', { msg: 'Sidecar failed to start - check the logs', is_error: true });
+            }
+            return;
+        }
         const delay = Math.min(2000 * Math.pow(2, sidecarRestartAttempts - 1), 60000);
         logToFile(`Sidecar crashed! Attempting restart ${sidecarRestartAttempts} in ${delay}ms...`);
 
