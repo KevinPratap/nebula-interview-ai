@@ -350,8 +350,9 @@ class AIWorker:
                 if isinstance(last_msg.get("content"), str):
                     last_msg["content"] = last_msg["content"] + "\n" + ocr_text
 
-        # Auto-detect best provider based on task and keys
-        providers = ["groq", "gemini", "openai", "anthropic", "deepseek", "openrouter"]
+        # Auto-detect best provider based on task and keys.
+        # Gemini first: Groq is geo-blocked in India (Cloudflare 1010), the primary market.
+        providers = ["gemini", "groq", "openai", "anthropic", "deepseek", "openrouter"]
 
         sys.stderr.write(f"DEBUG: AI Selection - Providers: {providers} (Images: {len(self.image_list)})\n")
         sys.stderr.flush()
@@ -410,7 +411,12 @@ class AIWorker:
                     return
                 except Exception as e:
                     from core.utils import log_debug
-                    log_debug(f"Groq failed: {str(e)}")
+                    err = str(e)
+                    log_debug(f"Groq failed: {err}")
+                    # Cloudflare 1010 / HTTP 403 = geo-blocked (Groq does not serve India)
+                    if "1010" in err or "403" in err:
+                        log_debug("Groq is geo-blocked in this region (India). Skipping Groq this session.")
+                        self.groq_blocked = True
 
             elif p == "gemini" and has_key(self.gemini_key):
                 if "gemini" in self.selected_models:
@@ -571,7 +577,7 @@ class AIWorker:
                                     }
                                 })
 
-                    model_name = self.selected_models.get("anthropic", "claude-sonnet-4-20250514")
+                    model_name = self.selected_models.get("anthropic", "claude-sonnet-4-6")
                     full_text = ""
                     with client.messages.stream(
                         model=model_name,
@@ -658,5 +664,10 @@ class AIWorker:
                     log_debug(f"OpenRouter failed: {str(e)}")
 
         # --- FINAL FAIL ---
-        if self.on_finished: 
-            self.on_finished(None, "AI Request Failed - All Providers Down")
+        hint = ""
+        if getattr(self, "groq_blocked", False):
+            hint = " Groq is geo-blocked in India - use a Gemini key (free at aistudio.google.com)."
+        elif not any_key:
+            hint = " Add an API key in Settings."
+        if self.on_finished:
+            self.on_finished(None, "AI Request Failed - All Providers Down." + hint)
