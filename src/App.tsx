@@ -683,10 +683,6 @@ function App() {
       if (e.key === 'Escape') {
         setDrawerOpen(false);
       }
-      // Ctrl+C: copy last response when drawer is open
-      if ((e.ctrlKey || e.metaKey) && e.key === 'c' && drawerOpen && aiResponse) {
-        navigator.clipboard.writeText(aiResponse).catch(() => {});
-      }
       if (e.altKey && (e.key === 'x' || e.key === 'X')) {
         e.preventDefault();
         handleScreenAnalysis();
@@ -722,6 +718,21 @@ function App() {
       window.removeEventListener('wheel', handleWheel);
     };
   }, []);
+
+  // Ctrl+C copies the last response when the drawer is open and nothing is selected.
+  // Kept in its own effect so it reads the latest drawerOpen / aiResponse (avoids stale closure).
+  useEffect(() => {
+    const handleCopyShortcut = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'C') && drawerOpen && aiResponse) {
+        // Respect an active text selection — let the browser copy that instead.
+        const selection = window.getSelection()?.toString();
+        if (selection && selection.trim()) return;
+        navigator.clipboard.writeText(aiResponse).catch(() => {});
+      }
+    };
+    window.addEventListener('keydown', handleCopyShortcut);
+    return () => window.removeEventListener('keydown', handleCopyShortcut);
+  }, [drawerOpen, aiResponse]);
 
   const updateSetting = (key: string, val: any) => {
     setSettings((prev: any) => {
@@ -1525,7 +1536,7 @@ function App() {
                         ) : (
                           savedNotes.slice(0, 10).map((note: any, idx: number) => (
                             <div key={idx} className="setting-row"
-                              style={{ cursor: 'pointer', borderBottom: idx < savedNotes.length - 1 ? '1px solid var(--border-color)' : 'none' }}
+                              style={{ cursor: 'pointer', borderBottom: idx < Math.min(savedNotes.length, 10) - 1 ? '1px solid var(--border-color)' : 'none' }}
                               onClick={() => setStatus(`Notes: ${note.filename}`)}>
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', overflow: 'hidden' }}>
                                 <span style={{ fontSize: '12px', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -1976,6 +1987,8 @@ function App() {
                               action: 'fake-transcript',
                               payload: chatInput.trim()
                             });
+                            // Manually trigger AI so Send works even when auto_answer is off (parity with Enter key)
+                            window.electron?.ipcRenderer.send('send-to-sidecar', { action: 'trigger-ai' });
                             setIsThinking(true);
                             setChatInput('');
                           }

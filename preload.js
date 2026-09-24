@@ -27,8 +27,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   on: (channel, callback) => {
     if (ALLOWED_RECEIVE_CHANNELS.includes(channel)) {
-      ipcRenderer.on(channel, (event, ...args) => callback(...args));
+      const listener = (event, ...args) => callback(...args);
+      ipcRenderer.on(channel, listener);
+      // Return an unsubscribe function so callers can clean up individual listeners
+      return () => ipcRenderer.removeListener(channel, listener);
     }
+    return () => {};
   },
   invoke: (channel, ...args) => {
     if (ALLOWED_INVOKE_CHANNELS.includes(channel)) {
@@ -53,8 +57,12 @@ contextBridge.exposeInMainWorld('electron', {
     },
     on: (channel, callback) => {
       if (ALLOWED_RECEIVE_CHANNELS.includes(channel)) {
-        ipcRenderer.on(channel, (event, ...args) => callback(...args));
+        const listener = (event, ...args) => callback(...args);
+        ipcRenderer.on(channel, listener);
+        // Return an unsubscribe function so callers can clean up individual listeners
+        return () => ipcRenderer.removeListener(channel, listener);
       }
+      return () => {};
     },
     invoke: (channel, ...args) => {
       if (ALLOWED_INVOKE_CHANNELS.includes(channel)) {
