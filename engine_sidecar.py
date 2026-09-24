@@ -56,6 +56,12 @@ class SidecarEngine:
         # so an unguarded manual trigger could race the watchdog's own auto-trigger check
         # and drop or duplicate a spoken fragment.
         self._trigger_lock = threading.Lock()
+        # Mock-interview mode: while active, spoken audio accumulates in
+        # transcript_buffer as the candidate's answer to practice_question — the
+        # buffer-watchdog must NOT auto-trigger a live-interview answer on it.
+        # Guarded by _trigger_lock alongside the buffer/query fields above.
+        self.practice_mode_active = False
+        self.practice_question = ""
         self.linked_files = {}           # v51.52: Tracking file count
         self.vision_buffer = []          # v51.80: Vision analysis buffer
         self.audio_pump = None           # v1.3.0: Bluetooth audio duplication pump
@@ -183,6 +189,10 @@ class SidecarEngine:
                 with self._trigger_lock:
                     if not self.transcript_buffer:
                         continue
+                    if self.practice_mode_active:
+                        # Let it accumulate as the mock-interview answer instead —
+                        # submit-practice-answer reads and clears it explicitly.
+                        continue
 
                     now = time.time()
                     time_since_last = now - self.last_transcript_time
@@ -271,11 +281,17 @@ class SidecarEngine:
         })
         self.send_to_electron("status", {"msg": "Nebula Ready"})
 
-    def on_ai_chunk(self, chunk, is_start=False):
+    def on_ai_chunk(self, chunk, is_start=False, mode=None):
+        # Prefer the actual in-flight generation's mode (now threaded through from
+        # AIService) over the raw expert_mode setting — previously, streaming chunks
+        # during "Auto" mode were tagged literally "Auto" instead of the detected
+        # mode (e.g. "Coding interview"), so the UI could briefly render the wrong
+        # panel until the final response corrected it.
+        strategy = mode if mode else ("Auto" if self.settings.get("expert_mode") == "Auto" else self.settings.get("expert_mode"))
         self.send_to_electron("ai-chunk", {
-            "text": chunk, 
+            "text": chunk,
             "is_start": is_start,
-            "strategy": "Auto" if self.settings.get("expert_mode") == "Auto" else self.settings.get("expert_mode")
+            "strategy": strategy
         })
 
     def on_ai_error(self, error):
@@ -531,12 +547,60 @@ class SidecarEngine:
         elif action == "fake-transcript":
             self.on_transcript(payload, "Manual")
 
+        elif action == "start-practice-session":
+            # payload: the practice question text (string). Arms mock-interview mode —
+            # the buffer-watchdog stops auto-triggering live-interview answers while
+            # active, so spoken audio just accumulates as the candidate's answer.
+            question = (payload or "").strip()
+            if not question:
+                self.send_to_electron("error", {"msg": "No practice question provided"})
+            else:
+                with self._trigger_lock:
+                    self.practice_question = question
+                    self.practice_mode_active = True
+                    self.transcript_buffer = []
+                self.send_to_electron("practice-session-started", {"question": question})
+                self.send_to_electron("status", {"msg": "Mock interview: listening for your answer..."})
+                log_debug(f"Practice session started: {question[:80]}")
+
+        elif action == "cancel-practice-session":
+            with self._trigger_lock:
+                self.practice_mode_active = False
+                self.practice_question = ""
+                self.transcript_buffer = []
+            self.send_to_electron("practice-session-ended", {})
+            self.send_to_electron("status", {"msg": "Nebula Ready"})
+
+        elif action == "submit-practice-answer":
+            # Optional payload: a typed answer override (string). Otherwise uses
+            # whatever was captured in transcript_buffer while practice mode was active.
+            with self._trigger_lock:
+                if not self.practice_mode_active:
+                    self.send_to_electron("error", {"msg": "No active practice session"})
+                    answer_text, question = None, None
+                else:
+                    typed_override = (payload or "").strip() if isinstance(payload, str) else ""
+                    buffered = " ".join(self.transcript_buffer).strip()
+                    answer_text = self._clean_stutters(typed_override or buffered)
+                    question = self.practice_question
+                    self.practice_mode_active = False
+                    self.practice_question = ""
+                    self.transcript_buffer = []
+
+            if question is not None:
+                self.send_to_electron("status", {"msg": "Nebula: Critiquing your answer..."})
+                self.ai.generate_critique(question, answer_text)
+                log_debug(f"Practice answer submitted ({len(answer_text)} chars) for: {question[:80]}")
+
         elif action == "trigger-ai":
             log_debug("Triggering AI (Manual)...")
             # Same critical section as _buffer_watchdog — locked so a manual trigger
             # can't race the watchdog's own auto-trigger check on the same buffer.
             trigger_q = None
             with self._trigger_lock:
+                if self.practice_mode_active:
+                    self.send_to_electron("status", {"msg": "Mock interview active — use Submit Answer instead"})
+                    return
                 if self.transcript_buffer:
                     combined_text = " ".join(self.transcript_buffer).strip()
                     combined_text = self._clean_stutters(combined_text)

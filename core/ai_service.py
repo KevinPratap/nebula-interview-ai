@@ -262,23 +262,23 @@ class AIService:
         self._worker = worker
         
         def make_chunk_cb(w):
-            return lambda txt: self._on_worker_chunk(w, txt)
+            return lambda txt: self._on_worker_chunk(w, txt, effective_mode)
         def make_finished_cb(w):
             return lambda res, err: self._on_worker_finished(w, res, err, question, effective_mode)
-            
+
         worker.on_chunk = make_chunk_cb(worker)
         worker.on_finished = make_finished_cb(worker)
-        
+
         if self.on_chunk_callback:
-            self.on_chunk_callback("", is_start=True)
-        
+            self.on_chunk_callback("", is_start=True, mode=effective_mode)
+
         threading.Thread(target=worker.run, daemon=True).start()
-        
-    def _on_worker_chunk(self, worker, chunk):
+
+    def _on_worker_chunk(self, worker, chunk, mode=None):
         if worker != self._worker:
             return
         if self.on_chunk_callback:
-            self.on_chunk_callback(chunk, is_start=False)
+            self.on_chunk_callback(chunk, is_start=False, mode=mode)
 
     def _on_worker_finished(self, worker, result, error, question, effective_mode):
         if worker != self._worker:
@@ -295,6 +295,75 @@ class AIService:
                     self.on_error_callback(error)
         except Exception as e:
             sys.stderr.write(f"DEBUG: Error in worker finished callback: {e}\n")
+            sys.stderr.flush()
+
+    def generate_critique(self, question, answer):
+        """
+        Mock-interview mode: critique the user's SPOKEN answer to a practice question,
+        rather than answering the question ourselves. Deliberately does not touch
+        conversation_history/current_mode — this is a side activity, not a live
+        interview turn, and shouldn't bleed into either.
+        """
+        from core.utils import log_debug
+        log_debug("AIService.generate_critique called")
+        if self.is_generating or self._worker:
+            self.cancel_generation()
+            import time
+            time.sleep(0.1)
+
+        self.is_generating = True
+
+        system_content = (
+            "You are an expert interview coach reviewing a candidate's SPOKEN answer to a "
+            "practice interview question (delivered live, so forgive minor verbal roughness). "
+            "Critique it constructively using this exact structure so it renders cleanly: "
+            "'### Strengths' followed by a short bulleted list of what worked, "
+            "'### Areas to Improve' followed by a short bulleted list of concrete gaps, "
+            "'### Suggested Improvement' with a brief rewritten version of the weakest part "
+            "of the answer (2-4 sentences, not a full replacement answer). "
+            "Do not restate the question. Do not use code blocks. Be specific and encouraging, "
+            "never generic ('good job'). If the answer is empty or clearly cut off, say so "
+            "plainly under Areas to Improve instead of inventing content to critique."
+        )
+        messages = [
+            {"role": "system", "content": system_content},
+            {"role": "user", "content": f"QUESTION ASKED:\n{question}\n\nCANDIDATE'S SPOKEN ANSWER:\n{answer or '(no answer was captured)'}"}
+        ]
+
+        worker = AIWorker(self.groq_key, self.gemini_key, self.openai_key,
+                         self.anthropic_key, self.deepseek_key, self.openrouter_key,
+                         messages, selected_models=self.selected_models)
+        self._worker = worker
+
+        def make_chunk_cb(w):
+            return lambda txt: self._on_worker_chunk(w, txt, "Practice Critique")
+        def make_finished_cb(w):
+            return lambda res, err: self._on_critique_finished(w, res, err, question)
+
+        worker.on_chunk = make_chunk_cb(worker)
+        worker.on_finished = make_finished_cb(worker)
+
+        if self.on_chunk_callback:
+            self.on_chunk_callback("", is_start=True, mode="Practice Critique")
+
+        threading.Thread(target=worker.run, daemon=True).start()
+
+    def _on_critique_finished(self, worker, result, error, question):
+        if worker != self._worker:
+            return
+        self.is_generating = False
+        self._worker = None
+        try:
+            if result:
+                # Tagged with its own mode/strategy ("Practice Critique") rather than
+                # appended to conversation_history — see generate_critique's docstring.
+                if self.on_response_callback:
+                    self.on_response_callback(result, "Practice Critique", question)
+            elif error and not worker.stop_event.is_set():
+                if self.on_error_callback:
+                    self.on_error_callback(error)
+        except Exception as e:
+            sys.stderr.write(f"DEBUG: Error in critique finished callback: {e}\n")
             sys.stderr.flush()
 
 def run_local_ocr_fallback(image_bytes):

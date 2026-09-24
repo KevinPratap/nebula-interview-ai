@@ -14,8 +14,9 @@ const ALLOWED_RECEIVE_CHANNELS = [
   'volume-received',
   'context-update-received', 'context-count-received', 'resume-parsed-received', 
   'context-fetched-received', 'registration-report', 'open-external-url', 'toggle-stealth', 
-  'ready-received', 'session-status', 'saved-notes', 'saved-notes-received', 
-  'notes-ready', 'notes-ready-received'
+  'ready-received', 'session-status', 'saved-notes', 'saved-notes-received',
+  'notes-ready', 'notes-ready-received',
+  'practice-session-started-received', 'practice-session-ended-received'
 ];
 
 // Expose as electronAPI (new API)

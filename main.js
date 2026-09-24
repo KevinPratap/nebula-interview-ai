@@ -599,12 +599,13 @@ ipcMain.handle('open-file-dialog', async () => {
 // sandbox, so this is defense-in-depth against arbitrary stdin injection into the
 // Python process via a compromised/buggy renderer.
 const ALLOWED_SIDECAR_ACTIONS = new Set([
-    'analyze-screen', 'capture-snapshot', 'clear-snapshots', 'clear-transcript',
-    'end-session', 'fake-transcript', 'fetch-context', 'generate-meeting-notes',
-    'get-api-keys', 'get-audio-devices', 'get-available-models', 'get-context-count',
-    'get-output-devices', 'get-saved-notes', 'get-session-status', 'get-settings',
-    'open-url', 'parse-file', 'save-session', 'select-output-device', 'start-session',
-    'trigger-ai', 'update-api-keys', 'update-context', 'update-model', 'update-setting'
+    'analyze-screen', 'cancel-practice-session', 'capture-snapshot', 'clear-snapshots',
+    'clear-transcript', 'end-session', 'fake-transcript', 'fetch-context',
+    'generate-meeting-notes', 'get-api-keys', 'get-audio-devices', 'get-available-models',
+    'get-context-count', 'get-output-devices', 'get-saved-notes', 'get-session-status',
+    'get-settings', 'open-url', 'parse-file', 'save-session', 'select-output-device',
+    'start-practice-session', 'start-session', 'submit-practice-answer', 'trigger-ai',
+    'update-api-keys', 'update-context', 'update-model', 'update-setting'
 ]);
 
 ipcMain.on('send-to-sidecar', (event, { action, payload }) => {
