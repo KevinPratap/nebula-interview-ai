@@ -44,6 +44,7 @@
   "build": {
     "appId": "com.nebula.assistant",
     "productName": "Nebula Interview AI",
+    "publish": null,
     "directories": {
       "output": "dist_electron"
     },
