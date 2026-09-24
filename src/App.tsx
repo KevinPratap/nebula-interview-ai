@@ -203,7 +203,6 @@ function App() {
   const [isLive, setIsLive] = useState(false)
   const [status, setStatus] = useState("v1.3.0 OSS")
   const [isError, setIsError] = useState(false)
-  const [showOnboarding, setShowOnboarding] = useState(false)
   const [platform, setPlatform] = useState<string>('win32')
 
   const [transcript, setTranscript] = useState("")
@@ -320,8 +319,6 @@ function App() {
     settings.openrouter_api_key?.trim()
   );
 
-  const isAuthorized = true;
-
   useEffect(() => {
     const subs: (() => void)[] = [];
     if (!window.electron) return;
@@ -383,8 +380,12 @@ function App() {
       if (p.text) {
         setLiveTranscript(prev => {
           const combined = (prev + " " + p.text).trim();
-          // Keep only last 100 chars for the live bubble
-          return combined.length > 100 ? "..." + combined.slice(-100) : combined;
+          if (combined.length <= 100) return combined;
+          // Keep only the last ~100 chars for the live bubble, but snap to a word
+          // boundary so we don't chop off a partial word mid-render.
+          const tail = combined.slice(-100);
+          const firstSpace = tail.indexOf(' ');
+          return "..." + (firstSpace > -1 ? tail.slice(firstSpace + 1) : tail);
         });
 
         // Auto-clear after 3 seconds of silence
@@ -509,11 +510,16 @@ function App() {
       }
     }));
     subs.push(window.electron?.ipcRenderer.on('api-keys-updated-received', () => {
-      showToast('API key saved', 'success');
+      console.log("UI: Sidecar confirmed API key(s) saved");
     }));
-    subs.push(window.electron?.ipcRenderer.on('api-keys-received', (p: any) => {
-      setApiKeys({ groq: p.groq || '', openai: p.openai || '', gemini: p.gemini || '', anthropic: p.anthropic || '', deepseek: p.deepseek || '', openrouter: p.openrouter || '' });
-    }));
+    // Note: the sidecar only ever returns MASKED keys here (e.g. "gsk_...ab12"), and it
+    // sends them under `${provider}_key`, not the bare provider name. We intentionally do
+    // NOT use this to prefill the editable password inputs below — populating an editable
+    // field with a masked value is a trap: further edits would append to/replace a value
+    // that's no longer the real key. The "Configured" chip already shows key-presence via
+    // `settings[...]_api_key` (also masked, but display-only), so this listener is kept
+    // only in case something else needs to know a key is configured server-side.
+    subs.push(window.electron?.ipcRenderer.on('api-keys-received', (_p: any) => {}));
     subs.push(window.electron?.ipcRenderer.on('available-models-received', (p: any) => {
       if (p.models) {
         setAvailableModels(p.models);
@@ -757,16 +763,12 @@ function App() {
   };
 
   const handleManualTrigger = () => {
-    if (!isAuthorized || !isLive || !transcript.trim()) return;
+    if (!isLive || !transcript.trim()) return;
     window.electron?.ipcRenderer.send('send-to-sidecar', { action: 'trigger-ai' });
     setStatus("NEBULA: TRIGGERING MANUAL...");
   };
 
   const handleScreenAnalysis = () => {
-    if (!isAuthorized) {
-      toggleDrawer('account');
-      return;
-    }
     // Open response drawer to show vision results
     setDrawerMode('response');
     setDrawerOpen(true);
@@ -783,6 +785,7 @@ function App() {
   const handleClearSnapshots = () => {
     window.electron?.ipcRenderer.send('send-to-sidecar', { action: 'clear-snapshots' });
     setStatus("SNAPSHOTS CLEARED");
+    showToast('Screen context cleared', 'info');
   };
 
   const handleMicClick = () => {
@@ -826,10 +829,6 @@ function App() {
     });
     window.electron?.ipcRenderer.send('send-to-sidecar', { action: 'trigger-ai' });
     showToast(`Loaded ${q.topic} question into AI Copilot`, 'success');
-  };
-
-  const handleLockedClick = (mode: DrawerMode) => {
-    toggleDrawer(mode);
   };
 
   useEffect(() => {
@@ -961,7 +960,7 @@ function App() {
             {/* Direct Chat */}
               <button
                 className={`icon-circle no-drag ${drawerMode === 'chat' && drawerOpen ? 'btn-accent' : ''}`}
-                onClick={() => handleLockedClick('chat')}
+                onClick={() => toggleDrawer('chat')}
               >
                 <MessageSquare size={18} />
               </button>
@@ -1087,10 +1086,6 @@ function App() {
                   variants={pillVariants}
                   onClick={() => {
                     console.log("UI: History Pill Clicked. Opening Drawer.");
-                    if (!isAuthorized) {
-                      toggleDrawer('account');
-                      return;
-                    }
                     setAiResponse(item.a);
                     setDetectedStrategy(item.strategy);
                     setDrawerMode('response');
@@ -1113,10 +1108,6 @@ function App() {
                 whileTap={{ scale: 0.98 }}
                 onClick={() => {
                   console.log("UI: Active Pill Clicked. Opening Drawer.");
-                  if (!isAuthorized) {
-                    toggleDrawer('account');
-                    return;
-                  }
                   setDrawerMode('response');
                   setDrawerOpen(true);
                 }}
@@ -1162,12 +1153,12 @@ function App() {
                 </button>
               </Tooltip>
               <Tooltip disabled={!settings.show_tooltips} label="Strategy" description="Adjust AI behavior, upload resumes, or provide custom job context." position="bottom" delay={0.3} shortcut={settings.hotkey_strategy}>
-                <button className={`drawer-nav-btn ${drawerMode === 'strategy' ? 'active' : ''}`} onClick={() => handleLockedClick('strategy')}>
+                <button className={`drawer-nav-btn ${drawerMode === 'strategy' ? 'active' : ''}`} onClick={() => toggleDrawer('strategy')}>
                   <Terminal size={15} />
                 </button>
               </Tooltip>
               <Tooltip disabled={!settings.show_tooltips} label="History" description="Browse past questions and answers." position="bottom" delay={0.3} shortcut={settings.hotkey_history}>
-                <button className={`drawer-nav-btn ${drawerMode === 'history' ? 'active' : ''}`} onClick={() => handleLockedClick('history')}>
+                <button className={`drawer-nav-btn ${drawerMode === 'history' ? 'active' : ''}`} onClick={() => toggleDrawer('history')}>
                   <History size={15} />
                 </button>
               </Tooltip>
@@ -1289,16 +1280,27 @@ function App() {
                     </div>
 
                     <div className="practice-list">
-                      {questionBank
-                        .filter((q: any) => {
+                      {(() => {
+                        const filtered = questionBank.filter((q: any) => {
                           const matchesCat = practiceCategory === 'All' || q.category === practiceCategory;
-                          const matchesSearch = !practiceSearch || 
-                            q.question.toLowerCase().includes(practiceSearch.toLowerCase()) || 
+                          const matchesSearch = !practiceSearch ||
+                            q.question.toLowerCase().includes(practiceSearch.toLowerCase()) ||
                             q.topic.toLowerCase().includes(practiceSearch.toLowerCase()) ||
                             q.company.toLowerCase().includes(practiceSearch.toLowerCase());
                           return matchesCat && matchesSearch;
-                        })
-                        .map((q: any) => (
+                        });
+
+                        if (filtered.length === 0) {
+                          return (
+                            <div className="practice-empty-state" style={{ padding: '32px 16px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '13px' }}>
+                              <Search size={20} style={{ opacity: 0.5, marginBottom: '8px' }} />
+                              <p style={{ margin: 0 }}>No questions match "{practiceSearch}"{practiceCategory !== 'All' ? ` in ${practiceCategory}` : ''}.</p>
+                              <p style={{ margin: '4px 0 0 0', opacity: 0.7 }}>Try a different search term or category.</p>
+                            </div>
+                          );
+                        }
+
+                        return filtered.map((q: any) => (
                           <div key={q.id} className="practice-card no-drag">
                             <div className="practice-card-header">
                               <span className="practice-badge">{q.company}</span>
@@ -1319,7 +1321,8 @@ function App() {
                               </button>
                             </div>
                           </div>
-                        ))}
+                        ));
+                      })()}
                     </div>
                   </div>
                 </motion.div>
@@ -1870,7 +1873,12 @@ function App() {
                                             // Debounce IPC send to avoid per-keystroke transmission (v1.3.0)
                                             if (apiKeyTimers.current[prov.key]) clearTimeout(apiKeyTimers.current[prov.key]);
                                             apiKeyTimers.current[prov.key] = setTimeout(() => {
-                                              window.electron?.ipcRenderer.send('send-to-sidecar', { action: 'update-api-keys', payload: { [prov.key]: val } });
+                                              // Bug fix: the sidecar's update-api-keys handler reads payload
+                                              // keys as `${provider}_key` (e.g. "groq_key"), not the bare
+                                              // provider name — sending `{ groq: val }` was silently ignored
+                                              // by the backend, so typed keys never actually saved.
+                                              window.electron?.ipcRenderer.send('send-to-sidecar', { action: 'update-api-keys', payload: { [`${prov.key}_key`]: val } });
+                                              if (val.trim()) showToast(`${prov.label} key saved`, 'success');
                                             }, 400);
                                           }}
                                         />
@@ -1884,7 +1892,10 @@ function App() {
                                         </button>
                                       </div>
                                     </div>
-                                    {(apiKeys as any)[prov.key] && (availableModels as any)[prov.key] && (availableModels as any)[prov.key].length > 0 && (
+                                    {/* Use currentKeyVal (falls back to the masked settings value) rather than
+                                        apiKeys[prov.key] alone — otherwise a provider configured via env var or
+                                        an earlier session never shows its model picker until the key is retyped. */}
+                                    {currentKeyVal?.trim() && (availableModels as any)[prov.key] && (availableModels as any)[prov.key].length > 0 && (
                                       <div className="setting-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '4px', paddingLeft: '8px', marginTop: '-4px', marginBottom: '8px' }}>
                                         <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Model</span>
                                         <select
@@ -1952,17 +1963,16 @@ function App() {
                       </div>
                     </div>
 
-                    <div className={`chat-input-wrapper no-drag ${!isAuthorized ? 'locked' : ''}`}>
+                    <div className="chat-input-wrapper no-drag">
                       <input
                         type="text"
                         ref={chatInputRef}
                         className="chat-input"
                         placeholder="Type your question..."
                         value={chatInput}
-                        disabled={!isAuthorized}
                         onChange={(e) => setChatInput(e.target.value)}
                         onKeyDown={(e) => {
-                          if (e.key === 'Enter' && chatInput.trim() && isAuthorized) {
+                          if (e.key === 'Enter' && chatInput.trim()) {
                             setAiResponse('');
                             setDrawerMode('response'); // Transition to response view v1.1.7
                             window.electron?.ipcRenderer.send('send-to-sidecar', {
@@ -1978,9 +1988,9 @@ function App() {
                       />
                       <button
                         className="chat-send-btn"
-                        disabled={!isAuthorized || !chatInput.trim()}
+                        disabled={!chatInput.trim()}
                         onClick={() => {
-                          if (chatInput.trim() && isAuthorized) {
+                          if (chatInput.trim()) {
                             setAiResponse('');
                             setDrawerMode('response'); // Transition to response view v1.1.7
                             window.electron?.ipcRenderer.send('send-to-sidecar', {
@@ -2156,48 +2166,6 @@ function App() {
         }
       </AnimatePresence >
 
-      {/* Onboarding */}
-      <AnimatePresence>
-        {
-          showOnboarding && (
-            <motion.div
-              className="onboarding-overlay"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowOnboarding(false)}
-            >
-              <motion.div
-                className="onboarding-content"
-                initial={{ scale: 0.9, y: 20 }}
-                animate={{ scale: 1, y: 0 }}
-              >
-                <img src="/logo.png" alt="Nebula Logo" style={{ width: '120px', height: '120px', marginBottom: '16px', filter: 'drop-shadow(0 0 20px var(--accent-primary))' }} />
-                <h1>NEBULA</h1>
-                <p style={{ fontSize: '16px', color: 'var(--text-secondary)' }}>Real-time AI interview intelligence.</p>
-                <div className="guide-grid">
-                  <div className="guide-item">
-                    <Terminal size={28} color="var(--accent-primary)" />
-                    <strong>STRATEGY</strong>
-                    <span style={{ fontSize: '12px', opacity: 0.7 }}>Set your context for tailored answers.</span>
-                  </div>
-                  <div className="guide-item">
-                    <Mic size={28} color="var(--accent-primary)" />
-                    <strong>LISTEN</strong>
-                    <span style={{ fontSize: '12px', opacity: 0.7 }}>Tap mic or press hotkey to start.</span>
-                  </div>
-                  <div className="guide-item">
-                    <Zap size={28} color="var(--accent-primary)" />
-                    <strong>ANSWER</strong>
-                    <span style={{ fontSize: '12px', opacity: 0.7 }}>Nebula responds in real-time.</span>
-                  </div>
-                </div>
-                <div className="dismiss-hint" style={{ marginTop: '40px' }}>TAP ANYWHERE TO CLOSE</div>
-              </motion.div>
-            </motion.div>
-          )
-        }
-      </AnimatePresence >
     </div >
   )
 }
@@ -2456,11 +2424,25 @@ function HotkeyRecorder({ value, onChange }: { value: string, onChange: (v: stri
 
 function PremiumDropdown({ options, value, onChange, placeholder }: { options: { id: string, name: string }[], value: any, onChange: (v: any) => void, placeholder: string }) {
   const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
   const selected = options.find(o => o.id === value);
 
+  // Close on outside click — previously only a re-click on the header could close it,
+  // so it stayed open (and interactable) after focus moved elsewhere on the pill/drawer.
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [isOpen]);
+
   return (
-    <div className="premium-dropdown-container no-drag">
-      <div className={`premium-dropdown-header ${isOpen ? 'open' : ''}`} 
+    <div className="premium-dropdown-container no-drag" ref={containerRef}>
+      <div className={`premium-dropdown-header ${isOpen ? 'open' : ''}`}
            style={{ padding: '10px 14px', minHeight: '42px' }}
            onClick={(e) => { e.stopPropagation(); setIsOpen(!isOpen); }}>
         <span className="dropdown-label" style={{ fontSize: '12px', fontWeight: 600 }}>{selected ? selected.name : placeholder}</span>

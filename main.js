@@ -488,14 +488,17 @@ function startSidecar() {
     sidecarProcess.stderr.on('data', (data) => {
         console.error(`Sidecar Error: ${data}`);
     });
-
-    // Forward Main stdin to Sidecar for manual testing (Diagnostic)
-    process.stdin.on('data', (data) => {
-        if (sidecarProcess) {
-            sidecarProcess.stdin.write(data);
-        }
-    });
 }
+
+// Forward Main stdin to the current Sidecar process for manual testing (Diagnostic).
+// Registered once at module scope — startSidecar() is called again on every crash
+// restart, and registering this inside it stacked a duplicate listener on process.stdin
+// each time, so every keystroke got written to the sidecar N times after N restarts.
+process.stdin.on('data', (data) => {
+    if (sidecarProcess && sidecarProcess.stdin.writable) {
+        sidecarProcess.stdin.write(data);
+    }
+});
 
 ipcMain.on('toggle-listening', (_, enabled) => {
     console.log(`Main: Received toggle-listening -> ${enabled}`);
@@ -591,10 +594,28 @@ ipcMain.handle('open-file-dialog', async () => {
     return null;
 });
 
+// Allowlist of actions the sidecar actually understands (mirrors the `elif action ==`
+// branches in engine_sidecar.py). Renderer code runs with contextIsolation but not a
+// sandbox, so this is defense-in-depth against arbitrary stdin injection into the
+// Python process via a compromised/buggy renderer.
+const ALLOWED_SIDECAR_ACTIONS = new Set([
+    'analyze-screen', 'capture-snapshot', 'clear-snapshots', 'clear-transcript',
+    'end-session', 'fake-transcript', 'fetch-context', 'generate-meeting-notes',
+    'get-api-keys', 'get-audio-devices', 'get-available-models', 'get-context-count',
+    'get-output-devices', 'get-saved-notes', 'get-session-status', 'get-settings',
+    'open-url', 'parse-file', 'save-session', 'select-output-device', 'start-session',
+    'trigger-ai', 'update-api-keys', 'update-context', 'update-model', 'update-setting'
+]);
+
 ipcMain.on('send-to-sidecar', (event, { action, payload }) => {
     console.log(`Main: IPC [send-to-sidecar] action=${action}`);
+    if (!ALLOWED_SIDECAR_ACTIONS.has(action)) {
+        logToFile(`Main: [SECURITY] Rejected unknown send-to-sidecar action: ${action}`);
+        console.error(`Main: Rejected unknown send-to-sidecar action: ${action}`);
+        return;
+    }
     if (sidecarProcess && sidecarProcess.stdin.writable) {
-        
+
         // Enrich payload with display info if it's a vision/trigger action (v51.65)
         if (action === "analyze-screen" || action === "trigger-ai" || action === "capture-snapshot") {
             const win = BrowserWindow.fromWebContents(event.sender);
