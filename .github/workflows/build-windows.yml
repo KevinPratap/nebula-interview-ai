@@ -56,3 +56,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: dist_electron/*.exe
+          # Tags containing "-ci" (used for on-demand build tags, not real version
+          # releases) are published as drafts so they don't show up as the repo's
+          # latest release — delete the tag/release once you've grabbed the .exe.
+          draft: ${{ contains(github.ref_name, '-ci') }}
+          prerelease: ${{ contains(github.ref_name, '-ci') }}
