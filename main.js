@@ -409,11 +409,14 @@ function startSidecar() {
         logToFile(`Main: Sidecar error shown to user: ${err.message}`);
     });
 
-    let restartAttempts = 0;
     const MAX_RESTARTS = 5;
 
     sidecarProcess.on('exit', (code, signal) => {
         logToFile(`Sidecar Process exited with code ${code} and signal ${signal}`);
+
+        // The process is dead — drop the stale reference so health checks report
+        // accurately (startSidecar reassigns it on restart).
+        sidecarProcess = null;
 
         // Reset attempts on clean exit (code 0 = intentional shutdown)
         if (code === 0) {
@@ -424,7 +427,7 @@ function startSidecar() {
 
         // Exponential backoff: 2s, 4s, 8s, 16s, 32s, capped at 60s
         sidecarRestartAttempts++;
-        if (sidecarRestartAttempts > 5) {
+        if (sidecarRestartAttempts > MAX_RESTARTS) {
             logToFile(`Sidecar failed ${sidecarRestartAttempts} times - giving up, no more restarts.`);
             if (mainWindow && !mainWindow.isDestroyed() && mainWindow.webContents) {
                 mainWindow.webContents.send('status-received', { msg: 'Sidecar failed to start - check the logs', is_error: true });
