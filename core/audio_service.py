@@ -519,8 +519,19 @@ class AudioService:
     @staticmethod
     def get_output_devices():
         p = pyaudio.PyAudio()
-        devices = [{"id": str(i), "name": p.get_device_info_by_index(i).get('name')} 
-                   for i in range(p.get_device_count()) 
-                   if p.get_device_info_by_index(i).get('maxOutputChannels') > 0]
-        p.terminate()
-        return devices
+        try:
+            devices = []
+            for i in range(p.get_device_count()):
+                try:
+                    info = p.get_device_info_by_index(i)
+                except Exception:
+                    continue
+                if info.get('maxOutputChannels', 0) > 0:
+                    devices.append({"id": str(i), "name": info.get('name')})
+            return devices
+        finally:
+            # Unlike the list-comprehension version this replaces, terminate() now runs
+            # even if a device query raises — this is called on every OS device-change
+            # event, so a misbehaving device could otherwise leak a PortAudio handle
+            # each time it fires.
+            p.terminate()

@@ -65,20 +65,30 @@ class SettingsManager:
         }
 
     def save_settings(self):
-        # Direct write with lock to prevent race conditions
+        # Write-to-temp-then-rename with lock to prevent race conditions AND to avoid
+        # leaving a truncated/corrupt settings.json if the process dies mid-write (a
+        # direct open(..., 'w') truncates the file before any new bytes are written).
         with self._lock:
             try:
                 dir_path = os.path.dirname(self.filename)
                 if dir_path:
                     os.makedirs(dir_path, exist_ok=True)
-                with open(self.filename, 'w', encoding='utf-8') as f:
+                tmp_path = f"{self.filename}.tmp"
+                with open(tmp_path, 'w', encoding='utf-8') as f:
                     json.dump(self.settings, f, indent=4)
+                os.replace(tmp_path, self.filename)
             except Exception as e:
                 print(f"Failed to save settings to {self.filename}: {e}")
 
     def get(self, key, default=None):
         with self._lock:
-            return self.settings.get(key, default if default is not None else self.defaults().get(key))
+            # Check presence first — `defaults()` rebuilds a fresh dict (plus 6 os.environ
+            # lookups) on every call, and this is polled every 100ms from the buffer
+            # watchdog, so evaluating it as an eager fallback arg for an already-present
+            # key was needless work on a hot path.
+            if key in self.settings:
+                return self.settings[key]
+            return default if default is not None else self.defaults().get(key)
 
     def set(self, key, value):
         with self._lock:

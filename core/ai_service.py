@@ -335,10 +335,15 @@ class AIWorker:
         def has_key(k): return bool(k and str(k).strip())
 
         any_key = has_key(self.groq_key) or has_key(self.gemini_key) or has_key(self.openai_key) or has_key(self.anthropic_key) or has_key(self.deepseek_key) or has_key(self.openrouter_key)
+        # Groq and DeepSeek don't have a vision path in this worker (Groq's vision model
+        # was decommissioned; DeepSeek never supported it) — only these four can see images.
+        any_vision_key = has_key(self.gemini_key) or has_key(self.openai_key) or has_key(self.anthropic_key) or has_key(self.openrouter_key)
 
-        # Perform local OCR extraction if image_list is present AND no API keys are configured (fallback mode only)
+        # Perform local OCR extraction if there are images but no vision-capable provider
+        # is configured — this also covers a Groq-only or DeepSeek-only setup, not just "no
+        # keys at all", since neither of those can actually process a screenshot.
         ocr_text = ""
-        if self.image_list and not any_key:
+        if self.image_list and not any_vision_key:
             ocr_text_parts = []
             for img_bytes in self.image_list:
                 text_part = run_local_ocr_fallback(img_bytes)
@@ -357,11 +362,16 @@ class AIWorker:
         sys.stderr.write(f"DEBUG: AI Selection - Providers: {providers} (Images: {len(self.image_list)})\n")
         sys.stderr.flush()
 
-        if not any_key:
+        if self.image_list and not any_vision_key:
             if ocr_text:
+                no_vision_note = (
+                    "(No vision-capable AI key configured — showing local OCR text only.)"
+                    if any_key else
+                    "(No API keys configured)"
+                )
                 fallback_msg = (
-                    "### Local OCR Scan Result (No API Keys Configured)\n\n"
-                    "We scanned your screen locally using PyTesseract. To get AI solutions, please configure your API keys in Settings.\n\n"
+                    f"### Local OCR Scan Result {no_vision_note}\n\n"
+                    "We scanned your screen locally using PyTesseract. To get AI solutions, please configure a Gemini, OpenAI, Anthropic, or OpenRouter key in Settings.\n\n"
                     "```text\n" + ocr_text.replace("--- EXTRACTED TEXT FROM SCREENSHOTS ---", "").strip() + "\n```"
                 )
                 if self.on_chunk:
@@ -379,20 +389,11 @@ class AIWorker:
                     from core.utils import log_debug
                     log_debug(msg)
                     client = Groq(api_key=self.groq_key, timeout=15.0)
-                    
-                    model_name = self.selected_models.get("groq", "llama-3.3-70b-versatile")
-                    formatted_messages = self.messages
 
-                    if self.image_list and "groq" not in self.selected_models:
-                        model_name = "llama-3.2-90b-vision-preview"
-                        content_list = [{"type": "text", "text": self.messages[-1]['content']}]
-                        for img_bytes in self.image_list:
-                            base64_image = base64.b64encode(img_bytes).decode('utf-8')
-                            content_list.append({"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}})
-                        
-                        new_msgs = self.messages[:-1]
-                        new_msgs.append({"role": "user", "content": content_list})
-                        formatted_messages = new_msgs
+                    # Groq's vision-capable model was decommissioned; the outer `and not
+                    # self.image_list` guard above already keeps this branch text-only.
+                    model_name = self.selected_models.get("groq", PROVIDER_DEFAULT_MODELS["groq"])
+                    formatted_messages = self.messages
 
                     stream = client.chat.completions.create(
                         model=model_name,
@@ -525,7 +526,7 @@ class AIWorker:
                         formatted_messages = self.messages
 
                     stream = client.chat.completions.create(
-                        model=self.selected_models.get("openai", "gpt-4o"),
+                        model=self.selected_models.get("openai", PROVIDER_DEFAULT_MODELS["openai"]),
                         messages=formatted_messages,
                         max_tokens=800,
                         stream=True
@@ -577,7 +578,7 @@ class AIWorker:
                                     }
                                 })
 
-                    model_name = self.selected_models.get("anthropic", "claude-sonnet-4-6")
+                    model_name = self.selected_models.get("anthropic", PROVIDER_DEFAULT_MODELS["anthropic"])
                     full_text = ""
                     with client.messages.stream(
                         model=model_name,
@@ -596,7 +597,9 @@ class AIWorker:
                     from core.utils import log_debug
                     log_debug(f"Anthropic failed: {str(e)}")
 
-            elif p == "deepseek" and has_key(self.deepseek_key):
+            elif p == "deepseek" and has_key(self.deepseek_key) and not self.image_list:
+                # DeepSeek has no vision support — without this guard, a DeepSeek-only
+                # setup would silently drop the screenshot and answer as if it saw nothing.
                 try:
                     from core.utils import log_debug
                     log_debug(f"Attempting DeepSeek (Vision: {len(self.image_list) > 0})")
@@ -606,7 +609,7 @@ class AIWorker:
                     formatted_messages = self.messages
 
                     stream = client.chat.completions.create(
-                        model=self.selected_models.get("deepseek", "deepseek-chat"),
+                        model=self.selected_models.get("deepseek", PROVIDER_DEFAULT_MODELS["deepseek"]),
                         messages=formatted_messages,
                         max_tokens=800,
                         stream=True
@@ -645,6 +648,8 @@ class AIWorker:
                         formatted_messages = self.messages
 
                     stream = client.chat.completions.create(
+                        # PROVIDER_DEFAULT_MODELS["openrouter"] is intentionally "" (OpenRouter
+                        # takes any free-text model slug), so a literal fallback is kept here.
                         model=self.selected_models.get("openrouter", "gpt-4o"),
                         messages=formatted_messages,
                         max_tokens=800,
@@ -669,5 +674,9 @@ class AIWorker:
             hint = " Groq is geo-blocked in India - use a Gemini key (free at aistudio.google.com)."
         elif not any_key:
             hint = " Add an API key in Settings."
+        elif self.image_list and not any_vision_key:
+            # Reachable when OCR ran but extracted nothing (e.g. a blank/complex screen) —
+            # the earlier OCR-fallback block only returns early if it found text.
+            hint = " Your configured provider(s) (Groq/DeepSeek) don't support vision — add a Gemini, OpenAI, Anthropic, or OpenRouter key for screen analysis."
         if self.on_finished:
             self.on_finished(None, "AI Request Failed - All Providers Down." + hint)

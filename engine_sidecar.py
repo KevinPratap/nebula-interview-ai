@@ -45,11 +45,17 @@ class SidecarEngine:
         self.audio = AudioService(use_loopback=True, source_label="Internal Audio", device_index=device_id)
         
         # v16.0 Intelligence State
-        self.transcript_buffer = [] 
+        self.transcript_buffer = []
         self.last_transcript_time = 0
-        self.current_query = "" 
+        self.current_query = ""
         self.last_trigger_time = 0      # v26.0 Joining logic
         self.last_trigger_text = ""      # v26.0 Joining logic
+        # Guards the fields above — they're mutated from on_transcript (audio capture
+        # thread), _buffer_watchdog (persistent background thread), and every incoming
+        # command (handle_command spawns a new thread per command, including trigger-ai),
+        # so an unguarded manual trigger could race the watchdog's own auto-trigger check
+        # and drop or duplicate a spoken fragment.
+        self._trigger_lock = threading.Lock()
         self.linked_files = {}           # v51.52: Tracking file count
         self.vision_buffer = []          # v51.80: Vision analysis buffer
         self.audio_pump = None           # v1.3.0: Bluetooth audio duplication pump
@@ -132,9 +138,10 @@ class SidecarEngine:
 
         sys.stderr.write(f"DEBUG: Heard fragment: \"{text}\"\n")
         sys.stderr.flush()
-        
-        self.transcript_buffer.append(text)
-        self.last_transcript_time = time.time()
+
+        with self._trigger_lock:
+            self.transcript_buffer.append(text)
+            self.last_transcript_time = time.time()
 
         # Feed to transcript manager for meeting notes
         self.transcript.add_entry(text, source)
@@ -167,76 +174,85 @@ class SidecarEngine:
     def _buffer_watchdog(self):
         while True:
             try:
-                time.sleep(0.1) 
-                if not self.transcript_buffer: continue
-                
-                now = time.time()
-                time_since_last = now - self.last_transcript_time
-                combined_text = " ".join(self.transcript_buffer).strip()
-                
-                is_question = any(q in combined_text.lower() for q in ["?", "what", "how", "why", "when", "can you", "could you", "tell me", "explain", "describe"])
-                
-                auto_answer = self.settings.get("auto_answer")
-                should_trigger = False
-                # Determine threshold
-                threshold = 1.0 if is_question else 3.0
-                if self._is_fragment(combined_text):
-                    threshold *= 2.0 # Wait longer for fragments (v26.0)
+                time.sleep(0.1)
 
-                if auto_answer:
-                    if time_since_last > threshold:
-                        should_trigger = True
-                    
-                if should_trigger:
-                    combined_text = self._clean_stutters(combined_text)
-                    
-                    if self.ai.is_generating:
-                        # Only interrupt if the new speech is a meaningful addition (not a fragment)
-                        if self._is_fragment(combined_text):
-                            continue
-                            
-                        sys.stderr.write(f"DEBUG: Interviewer spoke over active generation. Merging query...\n")
-                        sys.stderr.write(f"Active Query: {self.last_trigger_text}\n")
-                        sys.stderr.write(f"New Speech: {combined_text}\n")
-                        sys.stderr.flush()
-                        
-                        # Merge the queries and trigger refinement
-                        self.current_query = (self.last_trigger_text + " " + combined_text).strip()
-                        self.current_query = self._clean_stutters(self.current_query)
-                        self.last_trigger_text = self.current_query
-                        self.last_trigger_time = now
-                        
-                        self.send_to_electron("status", {"msg": "Nebula: Refining Answer..."})
-                        self.ai.generate_response(self.current_query, is_start=True)
-                        self.transcript_buffer = []
-                    else:
-                        # Contextual Coalescing (v26.0)
-                        first_word = combined_text.strip().split()[0].lower() if combined_text.strip().split() else ""
-                        is_continuation = (
-                            (now - self.last_trigger_time < 10.0) or
-                            self._is_fragment(combined_text) or
-                            first_word in ["and", "or", "but", "so", "then", "also", "actually"]
-                        )
-                        
-                        if is_continuation and self.last_trigger_text:
-                            sys.stderr.write(f"DEBUG: Coalescing with last trigger: {self.last_trigger_text}\n")
+                # Decide-and-mutate under the lock; the actual AI call and status message
+                # happen after release below so we're not holding it during I/O/thread-start.
+                trigger_q = None
+                status_msg = None
+                with self._trigger_lock:
+                    if not self.transcript_buffer:
+                        continue
+
+                    now = time.time()
+                    time_since_last = now - self.last_transcript_time
+                    combined_text = " ".join(self.transcript_buffer).strip()
+
+                    is_question = any(q in combined_text.lower() for q in ["?", "what", "how", "why", "when", "can you", "could you", "tell me", "explain", "describe"])
+
+                    auto_answer = self.settings.get("auto_answer")
+                    should_trigger = False
+                    # Determine threshold
+                    threshold = 1.0 if is_question else 3.0
+                    if self._is_fragment(combined_text):
+                        threshold *= 2.0 # Wait longer for fragments (v26.0)
+
+                    if auto_answer:
+                        if time_since_last > threshold:
+                            should_trigger = True
+
+                    if should_trigger:
+                        combined_text = self._clean_stutters(combined_text)
+
+                        if self.ai.is_generating:
+                            # Only interrupt if the new speech is a meaningful addition (not a fragment)
+                            if self._is_fragment(combined_text):
+                                continue
+
+                            sys.stderr.write(f"DEBUG: Interviewer spoke over active generation. Merging query...\n")
+                            sys.stderr.write(f"Active Query: {self.last_trigger_text}\n")
+                            sys.stderr.write(f"New Speech: {combined_text}\n")
+                            sys.stderr.flush()
+
+                            # Merge the queries and trigger refinement
                             self.current_query = (self.last_trigger_text + " " + combined_text).strip()
-                        else:
-                            self.current_query = combined_text
-                        
-                        self.current_query = self._clean_stutters(self.current_query)
-                        self.last_trigger_time = now
-                        self.last_trigger_text = self.current_query
+                            self.current_query = self._clean_stutters(self.current_query)
+                            self.last_trigger_text = self.current_query
+                            self.last_trigger_time = now
+                            self.transcript_buffer = []
 
-                        sys.stderr.write(f"DEBUG: Triggering AI: \"{self.current_query}\"\n")
-                        sys.stderr.flush()
-                        trigger_q = self.current_query
-                        
-                        # V51.41: Enforce session expiry strictly in the trigger loop
-                        self.send_to_electron("status", {"msg": "Nebula: Thinking..."})
-                        self.ai.generate_response(trigger_q, is_start=True)
-                        # Clear buffer immediately to prevent re-triggering (v51.52)
-                        self.transcript_buffer = []
+                            status_msg = "Nebula: Refining Answer..."
+                            trigger_q = self.current_query
+                        else:
+                            # Contextual Coalescing (v26.0)
+                            first_word = combined_text.strip().split()[0].lower() if combined_text.strip().split() else ""
+                            is_continuation = (
+                                (now - self.last_trigger_time < 10.0) or
+                                self._is_fragment(combined_text) or
+                                first_word in ["and", "or", "but", "so", "then", "also", "actually"]
+                            )
+
+                            if is_continuation and self.last_trigger_text:
+                                sys.stderr.write(f"DEBUG: Coalescing with last trigger: {self.last_trigger_text}\n")
+                                self.current_query = (self.last_trigger_text + " " + combined_text).strip()
+                            else:
+                                self.current_query = combined_text
+
+                            self.current_query = self._clean_stutters(self.current_query)
+                            self.last_trigger_time = now
+                            self.last_trigger_text = self.current_query
+                            # Clear buffer immediately to prevent re-triggering (v51.52)
+                            self.transcript_buffer = []
+
+                            sys.stderr.write(f"DEBUG: Triggering AI: \"{self.current_query}\"\n")
+                            sys.stderr.flush()
+                            status_msg = "Nebula: Thinking..."
+                            trigger_q = self.current_query
+
+                if trigger_q is not None:
+                    # V51.41: Enforce session expiry strictly in the trigger loop
+                    self.send_to_electron("status", {"msg": status_msg})
+                    self.ai.generate_response(trigger_q, is_start=True)
             except Exception as e:
                 sys.stderr.write(f"ERROR: Watchdog crash: {e}\n")
                 sys.stderr.write(traceback.format_exc())
@@ -244,14 +260,16 @@ class SidecarEngine:
                 time.sleep(1) # Backoff
 
     def on_ai_response(self, response, mode="", question=""):
+        with self._trigger_lock:
+            current_query_snapshot = self.current_query
+            self.current_query = ""
         self.send_to_electron("ai-response", {
-            "text": response, 
-            "provider": "Groq", 
+            "text": response,
+            "provider": "Groq",
             "strategy": mode,
-            "trigger_question": question or self.current_query
+            "trigger_question": question or current_query_snapshot
         })
         self.send_to_electron("status", {"msg": "Nebula Ready"})
-        self.current_query = ""
 
     def on_ai_chunk(self, chunk, is_start=False):
         self.send_to_electron("ai-chunk", {
@@ -515,25 +533,32 @@ class SidecarEngine:
 
         elif action == "trigger-ai":
             log_debug("Triggering AI (Manual)...")
-            if self.transcript_buffer:
-                combined_text = " ".join(self.transcript_buffer).strip()
-                combined_text = self._clean_stutters(combined_text)
-                
-                # Use same joining logic as watchdog (v26.0)
-                now = time.time()
-                if now - self.last_trigger_time < 4.0:
-                    self.current_query = (self.last_trigger_text + " " + combined_text).strip()
-                else:
-                    self.current_query = combined_text
-                
-                self.current_query = self._clean_stutters(self.current_query)
-                self.last_trigger_time = now
-                self.last_trigger_text = self.current_query
-                
-                self.transcript_buffer = []
+            # Same critical section as _buffer_watchdog — locked so a manual trigger
+            # can't race the watchdog's own auto-trigger check on the same buffer.
+            trigger_q = None
+            with self._trigger_lock:
+                if self.transcript_buffer:
+                    combined_text = " ".join(self.transcript_buffer).strip()
+                    combined_text = self._clean_stutters(combined_text)
+
+                    # Use same joining logic as watchdog (v26.0)
+                    now = time.time()
+                    if now - self.last_trigger_time < 4.0:
+                        self.current_query = (self.last_trigger_text + " " + combined_text).strip()
+                    else:
+                        self.current_query = combined_text
+
+                    self.current_query = self._clean_stutters(self.current_query)
+                    self.last_trigger_time = now
+                    self.last_trigger_text = self.current_query
+
+                    self.transcript_buffer = []
+                    trigger_q = self.current_query
+
+            if trigger_q is not None:
                 self.send_to_electron("status", {"msg": "Thinking (Manual)..."})
-                self.ai.generate_response(self.current_query)
-                sys.stderr.write(f"DEBUG: Manual Trigger: {self.current_query}\n")
+                self.ai.generate_response(trigger_q)
+                sys.stderr.write(f"DEBUG: Manual Trigger: {trigger_q}\n")
                 sys.stderr.flush()
             else:
                 self.send_to_electron("status", {"msg": "No question detected yet"})
