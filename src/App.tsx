@@ -217,6 +217,7 @@ function App() {
   const [isThinking, setIsThinking] = useState(false)
   const [liveTranscript, setLiveTranscript] = useState("")
   const liveTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const opacityPersistTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [linkedFilesCount, setLinkedFilesCount] = useState(0)
   const [snapshotsCount, setSnapshotsCount] = useState(0)
 
@@ -710,11 +711,17 @@ function App() {
           const step = 15;
           let newOpacity = (prev.opacity || 255) - Math.sign(e.deltaY) * step;
           newOpacity = Math.max(25, Math.min(255, newOpacity));
+          // Live window opacity updates immediately for responsive feel, but persisting to
+          // disk is debounced — fast scrolling was previously triggering a full
+          // settings.json rewrite on every single wheel tick.
           window.electron?.ipcRenderer.send('set-opacity', newOpacity);
-          window.electron?.ipcRenderer.send('send-to-sidecar', {
-            action: 'update-setting',
-            payload: { key: 'opacity', val: newOpacity }
-          });
+          if (opacityPersistTimer.current) clearTimeout(opacityPersistTimer.current);
+          opacityPersistTimer.current = setTimeout(() => {
+            window.electron?.ipcRenderer.send('send-to-sidecar', {
+              action: 'update-setting',
+              payload: { key: 'opacity', val: newOpacity }
+            });
+          }, 300);
           return { ...prev, opacity: newOpacity };
         });
       }
