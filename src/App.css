@@ -2982,7 +2982,14 @@ body {
 .practice-action-row {
   display: flex;
   justify-content: flex-end;
+  gap: 8px;
   margin-top: 4px;
+}
+
+.practice-mock-btn {
+  background: transparent;
+  color: var(--accent-primary);
+  border: 1px solid var(--accent-primary);
 }
 
 .practice-trigger-btn {

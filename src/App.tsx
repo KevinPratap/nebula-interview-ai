@@ -40,7 +40,7 @@ declare global {
   }
 }
 
-type DrawerMode = 'response' | 'account' | 'settings' | 'strategy' | 'chat' | 'history' | 'notes' | 'practice' | 'guide';
+type DrawerMode = 'response' | 'account' | 'settings' | 'strategy' | 'chat' | 'history' | 'notes' | 'practice' | 'guide' | 'mock-interview';
 
 const springGentle: any = { type: "spring", stiffness: 300, damping: 30 };
 
@@ -233,6 +233,7 @@ function App() {
   const [volume, setVolume] = useState(0)
   const [practiceCategory, setPracticeCategory] = useState('All')
   const [practiceSearch, setPracticeSearch] = useState('')
+  const [mockInterview, setMockInterview] = useState<{ active: boolean; question: string; topic?: string } | null>(null)
 
   const chatInputRef = useRef<HTMLInputElement>(null)
   const chatScrollRef = useRef<HTMLDivElement>(null)
@@ -651,6 +652,15 @@ function App() {
     subs.push(window.electron?.ipcRenderer.on('notes-ready-received', handleNotesReady));
     subs.push(window.electron?.ipcRenderer.on('notes-ready', handleNotesReady));
 
+    // Mock Interview mode
+    subs.push(window.electron?.ipcRenderer.on('practice-session-started-received', (p: any) => {
+      console.log("UI: Practice session started:", p?.question);
+    }));
+    subs.push(window.electron?.ipcRenderer.on('practice-session-ended-received', () => {
+      console.log("UI: Practice session ended");
+      setMockInterview(null);
+    }));
+
     subs.push(window.electron?.ipcRenderer.on('hotkey-action', (action: string) => {
       console.log(`UI: [IPC] hotkey-action received: ${action}`);
       switch (action) {
@@ -838,6 +848,40 @@ function App() {
     showToast(`Loaded ${q.topic} question into AI Copilot`, 'success');
   };
 
+  // Mock Interview mode: AI asks a practice question, you answer out loud, AI critiques it.
+  const handleStartMockInterview = (q: any) => {
+    if (!isLive) {
+      setIsLive(true);
+      window.electron?.ipcRenderer.send('toggle-listening', true);
+    }
+    setMockInterview({ active: true, question: q.question, topic: q.topic });
+    setDrawerMode('mock-interview');
+    setDrawerOpen(true);
+    setStatus('MOCK INTERVIEW: LISTENING FOR YOUR ANSWER...');
+    window.electron?.ipcRenderer.send('send-to-sidecar', {
+      action: 'start-practice-session',
+      payload: q.question
+    });
+  };
+
+  const handleSubmitMockAnswer = () => {
+    if (!mockInterview?.active) return;
+    setAiResponse('');
+    setIsThinking(true);
+    setDetectedStrategy('Practice Critique');
+    setDrawerMode('response');
+    window.electron?.ipcRenderer.send('send-to-sidecar', { action: 'submit-practice-answer' });
+    setMockInterview(prev => prev ? { ...prev, active: false } : null);
+    setStatus('NEBULA: CRITIQUING YOUR ANSWER...');
+  };
+
+  const handleCancelMockInterview = () => {
+    window.electron?.ipcRenderer.send('send-to-sidecar', { action: 'cancel-practice-session' });
+    setMockInterview(null);
+    setDrawerOpen(false);
+    setStatus('Nebula Ready');
+  };
+
   useEffect(() => {
     window.electron?.ipcRenderer.send('set-drawer-status', drawerOpen);
     // Explicitly report resize when drawer toggles — ensures the Electron
@@ -849,6 +893,16 @@ function App() {
       }
     });
   }, [drawerOpen]);
+
+  // Auto-cancel an in-progress mock interview if the user navigates away or closes the
+  // drawer without submitting or explicitly cancelling — otherwise the sidecar's
+  // practice_mode_active flag stays stuck true, silently blocking normal auto-answer.
+  useEffect(() => {
+    if (mockInterview?.active && (drawerMode !== 'mock-interview' || !drawerOpen)) {
+      window.electron?.ipcRenderer.send('send-to-sidecar', { action: 'cancel-practice-session' });
+      setMockInterview(null);
+    }
+  }, [drawerMode, drawerOpen, mockInterview]);
 
   useEffect(() => {
     const isActive = !!(transcript || liveTranscript || history.length > 0);
@@ -1325,6 +1379,12 @@ function App() {
                                 onClick={() => handlePracticeQuestion(q)}
                               >
                                 <Zap size={14} /> Generate Answer (STAR)
+                              </button>
+                              <button
+                                className="practice-trigger-btn practice-mock-btn"
+                                onClick={() => handleStartMockInterview(q)}
+                              >
+                                <Mic size={14} /> Practice Speaking This
                               </button>
                             </div>
                           </div>
@@ -2076,6 +2136,50 @@ function App() {
                 </motion.div>
               )}
 
+              {/* Mock Interview: AI asks a practice question, you answer out loud, AI critiques it */}
+              {drawerMode === 'mock-interview' && (
+                <motion.div
+                  key="mock-interview-view"
+                  initial={{ opacity: 0, x: 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -10 }}
+                  transition={{ duration: 0.2 }}
+                  className="view-content"
+                  style={{ maxHeight: '500px', display: 'flex', flexDirection: 'column', padding: '0 8px 16px 8px' }}
+                >
+                  <div className="view-header">
+                    <h2><span className="header-slash">//</span> MOCK INTERVIEW</h2>
+                    {mockInterview?.topic && <span className="practice-badge">{mockInterview.topic}</span>}
+                  </div>
+
+                  <div className="setting-card" style={{ padding: '16px', marginBottom: '16px' }}>
+                    <span style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block', marginBottom: '6px' }}>QUESTION</span>
+                    <p style={{ fontSize: '14px', fontWeight: 600, margin: 0, lineHeight: 1.5 }}>{mockInterview?.question}</p>
+                  </div>
+
+                  <div className="thinking-placeholder" style={{ flexDirection: 'column', gap: '8px', padding: '16px 0' }}>
+                    <div className="vu-meter" title={`Audio Level: ${volume}%`}>
+                      <span className={`vu-bar ${volume > 5 ? 'active' : ''}`} />
+                      <span className={`vu-bar ${volume > 25 ? 'active' : ''}`} />
+                      <span className={`vu-bar ${volume > 50 ? 'active' : ''}`} />
+                      <span className={`vu-bar ${volume > 75 ? 'active' : ''}`} />
+                    </div>
+                    <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                      {isLive ? "Speak your answer, then hit Submit." : "Start listening (mic button) to be heard."}
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '8px', marginTop: 'auto' }}>
+                    <button className="btn-strategy-action no-drag" style={{ flex: 1, justifyContent: 'center', opacity: 0.7 }} onClick={handleCancelMockInterview}>
+                      Cancel
+                    </button>
+                    <button className="btn-strategy-sync no-drag" style={{ flex: 2 }} onClick={handleSubmitMockAnswer}>
+                      Submit Answer &amp; Get Feedback
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+
               {/* Response Stream (Answers Only v18.0) */}
               {drawerMode === 'response' && (
                 <motion.div
@@ -2135,6 +2239,12 @@ function App() {
 
                     {/* Content Area */}
                     <div className="response-content-area">
+                      {detectedStrategy === 'Practice Critique' && mockInterview?.question && (
+                        <div className="setting-card" style={{ padding: '12px', marginBottom: '12px' }}>
+                          <span style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px', fontWeight: 700, letterSpacing: '0.5px' }}>MOCK INTERVIEW FEEDBACK — QUESTION</span>
+                          <p style={{ fontSize: '13px', margin: 0, opacity: 0.85 }}>{mockInterview.question}</p>
+                        </div>
+                      )}
                       {aiResponse ? (
                         <>
                           {detectedStrategy === 'Behavioral (Soft skills)' ? (
